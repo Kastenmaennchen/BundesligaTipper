@@ -398,7 +398,7 @@
           </div>
         </div>
         <div class="bt-card" id="ranking">
-          <div class="bt-card-h"><h2>Team-Ranking</h2><span class="bt-hint">letzte 6 Spiele</span></div>
+          <div class="bt-card-h"><h2>Team-Ranking</h2><span class="bt-hint">letzte 4 Spiele</span></div>
           <div class="bt-chips" role="group" aria-label="Kennzahl wählen">
             <button class="bt-fchip" type="button" data-metric="xg_diff" aria-pressed="true">xG±</button>
             <button class="bt-fchip" type="button" data-metric="xt_diff" aria-pressed="false">Gefahr (xT)</button>
@@ -470,9 +470,9 @@
             <dt>Teamstärke</dt><dd>aus Toren und xG gelernt, xG zählt zu <b class="num" data-draw="m-wxg" data-source="modell" data-field="xg_gewicht" data-row="0">—</b> %</dd>
             <dt>xG</dt><dd>eigenes Modell aus <span class="num" data-draw="m-shots" data-source="modell" data-field="raum_schuesse" data-row="0">—</span> Schüssen mit Position (<span class="num" data-draw="m-raum" data-source="modell" data-field="raum_spiele" data-row="0">—</span> Spiele): Entfernung, Winkel, Kopfball, Freistoß, Flanke, Steilpass, Konter. Elfmeter <span class="num" data-draw="m-pen" data-source="modell" data-field="elfmeter_xg" data-row="0">—</span>. Ältere Spiele: Schätzung aus Schusszahlen.</dd>
             <dt>FotMob-xG</dt><dd><span class="num" data-draw="m-fmn" data-source="modell" data-field="fotmob_spiele" data-row="0">—</span> Spiele eingetragen, zählen zu <b class="num" data-draw="m-fmw" data-source="modell" data-field="fotmob_gewicht" data-row="0">—</b> % (steigt von 20 auf 70 %)</dd>
-            <dt>Form-Index</dt><dd data-draw="m-gew" data-source="modell" data-field="gewichte" data-row="0">—</dd>
+            <dt>Form-Index (4 Spiele)</dt><dd data-draw="m-gew" data-source="modell" data-field="gewichte" data-row="0">—</dd>
             <dt>Wirkung der Form</dt><dd>1 Punkt Unterschied verschiebt die erwarteten Tore um <b class="num" data-draw="m-fe" data-source="modell" data-field="form_effekt_pct" data-row="0">—</b> %</dd>
-            <dt>Ergebnis-Häufigkeiten</dt><dd>Korrektur für knappe Ergebnisse (0:0, 1:0, 1:1) nur zu <b class="num" data-draw="m-rho" data-source="modell" data-field="rho_gewicht" data-row="0">—</b> %; der Tipp richtet sich nach den erwarteten Toren.</dd>
+            <dt>Kalibrierung</dt><dd>Korrektur für knappe Ergebnisse zu <b class="num" data-draw="m-rho" data-source="modell" data-field="rho_gewicht" data-row="0">—</b> %, Unentschieden ×<span class="num" data-draw="m-df" data-source="modell" data-field="unentschieden_faktor" data-row="0">—</span>, Siegchancen geschärft mit Faktor <span class="num" data-draw="m-sch" data-source="modell" data-field="schaerfe" data-row="0">—</span>. So passen die Prozente im Test an 358 Spielen zur tatsächlichen Häufigkeit. Der Tipp richtet sich weiter nach den erwarteten Toren.</dd>
             <dt>Heimvorteil</dt><dd>Liga ×<span class="num" data-draw="m-heim" data-source="modell" data-field="heimvorteil" data-row="0">—</span>, je Team aus den eigenen Heimspielen angepasst</dd>
             <dt>Training</dt><dd><span class="num" data-draw="m-spiele" data-source="modell" data-field="trainiert_spiele" data-row="0">—</span> Spiele, Halbwertszeit <span class="num" data-draw="m-hwz" data-source="modell" data-field="halbwertszeit_tage" data-row="0">—</span> Tage</dd>
             <dt>Backtest</dt><dd><span class="num" data-draw="m-bts" data-source="modell" data-field="backtest_spiele" data-row="0">—</span> Spiele, Tendenz <b class="num" data-draw="m-btt" data-source="modell" data-field="backtest_tendenz" data-row="0">—</b> % richtig</dd>
@@ -684,6 +684,8 @@
   B.text('m-gew', 'modell', 'gewichte', first, (v) => String(v).replace(/(\d)\.(\d)/g, '$1,$2'));
   B.text('m-fe', 'modell', 'form_effekt_pct', first, pct1);
   B.text('m-rho', 'modell', 'rho_gewicht', first, pct0);
+  B.text('m-df', 'modell', 'unentschieden_faktor', first, (v) => B.nf2.format(Number(v)));
+  B.text('m-sch', 'modell', 'schaerfe', first, (v) => B.nf1.format(Number(v)));
   B.text('m-heim', 'modell', 'heimvorteil', first, (v) => B.nf2.format(Number(v)));
   B.text('m-spiele', 'modell', 'trainiert_spiele', first, (v) => B.nf0.format(Number(v)));
   B.text('m-hwz', 'modell', 'halbwertszeit_tage', first);
@@ -780,7 +782,7 @@
       addRow(gp, 'Form-Index', r.form_heim, r.form_gast, fs, 'high', ['prognosen', 'form_heim', w], ['prognosen', 'form_gast', w]);
       if (H && A) {
         const tw = (t) => 'team=' + encodeURIComponent(t);
-        const gf = group('Letzte 6 Spiele');
+        const gf = group('Letzte 4 Spiele');
         addRow(gf, 'xG± pro Spiel', H.xg_diff, A.xg_diff, fs, 'high', ['staerken', 'xg_diff', tw(r.heim)], ['staerken', 'xg_diff', tw(r.gast)]);
         addRow(gf, 'Gefahr (xT±)', H.xt_diff, A.xt_diff, (v) => B.sgn(v, 3), 'high', ['staerken', 'xt_diff', tw(r.heim)], ['staerken', 'xt_diff', tw(r.gast)]);
         addRow(gf, 'Feldkontrolle %', H.feldkontrolle, A.feldkontrolle, f1, 'high', ['staerken', 'feldkontrolle', tw(r.heim)], ['staerken', 'feldkontrolle', tw(r.gast)]);
@@ -831,11 +833,11 @@
 
   // Team-Ranking mit Kennzahl-Auswahl
   window.btMetrics = {
-    xg_diff: {fmt: (v) => window.bt.sgn(v), center: 0, hint: 'xG-Differenz: erwartete Tore minus erwartete Gegentore pro Spiel, Schnitt der letzten 6 Spiele.'},
+    xg_diff: {fmt: (v) => window.bt.sgn(v), center: 0, hint: 'xG-Differenz: erwartete Tore minus erwartete Gegentore pro Spiel, Schnitt der letzten 4 Spiele.'},
     xt_diff: {fmt: (v) => window.bt.sgn(v, 3), center: 0, hint: 'Gefahr (xT): Annäherung an Expected Threat. Wert der Ballbesitz-Aktionen nach Feldzone, eigene minus gegnerische.'},
     feldkontrolle: {fmt: (v) => window.bt.nf1.format(v) + ' %', center: 50, hint: 'Feldkontrolle: Annäherung an Pitch Control aus mittlerer Ballposition und Ballbesitz; 50 % ist ausgeglichen.'},
-    form: {fmt: (v) => window.bt.sgn(v), center: 0, hint: 'Form-Index aus xG, Schüssen, xT, Feldkontrolle, Ballbesitz, PPDA und Tabellenplatz; 0 ist Durchschnitt.'},
-    ballbesitz: {fmt: (v) => window.bt.nf1.format(v) + ' %', center: 50, hint: 'Ballbesitz: Schnitt der letzten 6 Spiele.'},
+    form: {fmt: (v) => window.bt.sgn(v), center: 0, hint: 'Form-Index aus xG, Tabellenplatz, xT, Feldkontrolle und Ballbesitz (Gewichte im Test an 358 Spielen bestimmt); 0 ist Durchschnitt.'},
+    ballbesitz: {fmt: (v) => window.bt.nf1.format(v) + ' %', center: 50, hint: 'Ballbesitz: Schnitt der letzten 4 Spiele.'},
     ppda: {fmt: (v) => window.bt.nf1.format(v), center: null, asc: true, hint: 'Pressing (PPDA): gegnerische Pässe je eigener Defensivaktion, angenähert. Kleiner bedeutet aggressiveres Pressing.'},
   };
   dash.draw('ranking-hint', (el) => {
