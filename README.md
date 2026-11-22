@@ -18,6 +18,6 @@ Jede Nacht gegen 23:40 Uhr rechnet ein geplanter Lauf das Modell neu (Ergebnisse
 | `d3.min.js` | d3 v7.9.0 (ISC-Lizenz) |
 | `fonts/` | Cormorant (SIL Open Font License 1.1) |
 
-Jede Datendatei enthält im Feld `meta` auch den Quelltext des Modells, mit dem sie berechnet wurde.
+Die Datendateien enthalten im Feld `meta` die Datenquellen und den Zeitpunkt der Berechnung. Bei den Spielereignissen sind nur Spiele mit genauen Feldpositionen enthalten (für die Schusskarte).
 
 Daten: [OpenLigaDB](https://www.openligadb.de) und ESPN. Alle Angaben ohne Gewähr.
