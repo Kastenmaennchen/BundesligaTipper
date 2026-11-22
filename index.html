@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bundesliga-Tipp</title>
 <meta name="description" content="Prognosen, Tabelle und Analysen zur Bundesliga – berechnet mit einem eigenen statistischen Modell.">
-<meta name="theme-color" content="#1e40af">
+<meta name="theme-color" content="#0b0f0d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bundesliga-Tipp">
@@ -15,8 +15,8 @@
 <link rel="stylesheet" href="fonts.css">
 <style>
   :root { --font-anthropic-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; color-scheme: light dark; }
-  html, body { margin: 0; background: #f8fafc; min-height: 100%; }
-  @media (prefers-color-scheme: dark) { html, body { background: #0b1220; } }
+  html, body { margin: 0; background: #f4f7f5; min-height: 100%; }
+  @media (prefers-color-scheme: dark) { html, body { background: #0a0f0c; } }
   body { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .dash-skeleton { position: relative; color: transparent !important; }
   .dash-skeleton::after { content: ""; position: absolute; inset: 6px 0; border-radius: 8px; background: linear-gradient(90deg, rgba(128,128,128,.08), rgba(128,128,128,.16), rgba(128,128,128,.08)); }
@@ -28,20 +28,21 @@
 <div id="dash-root" class="bt-site">
 <style>
   /* Layout (Skill „Data-Dense Dashboard“): Kopf mit Navigation, darunter ein dichtes Kartenraster.
-     Desktop: Spiele links, Kurztabelle rechts. Farben: Blau = Daten/Heim, Bernstein = Hervorhebung/Gast.
+     Desktop: Spiele links, Kurztabelle rechts. Farben: Grün = Daten/Heim, Schwarz = Kopf/Hervorhebung/Gast, Weiß = Flächen.
      Schrift: Fira Sans für Text, Fira Code für Zahlen. Abstände im 4/8-px-Raster. */
   #dash-root { --dash-gutter: 0; }
   .bt {
-    --bg: #f8fafc; --surface: #ffffff; --surface-2: #f1f5f9; --surface-3: #e2e8f0;
-    --line: #dbe3ef; --line-strong: #c6d2e3;
-    --fg: #0f172a; --heading: #1e3a8a; --muted: #475569; --faint: #64748b;
-    --primary: #1e40af; --primary-2: #3b82f6; --primary-soft: rgba(30,64,175,.08); --on-primary: #ffffff;
-    --accent: #d97706; --accent-soft: rgba(217,119,6,.12); --on-accent: #111827;
-    --home: #1e40af; --on-home: #ffffff; --away: #d97706; --on-away: #111827; --draw: #cbd5e1;
-    --win: #15803d; --win-soft: rgba(21,128,61,.12); --loss: #dc2626; --loss-soft: rgba(220,38,38,.1);
-    --zone-cl: #1e40af; --zone-el: #d97706; --zone-ecl: #0d9488; --zone-rel: #dc2626;
-    --pitch: #0f2347; --pitch-line: rgba(255,255,255,.28); --pitch-home: #93c5fd; --pitch-away: #fbbf24;
-    --bar-bg: rgba(255,255,255,.94); --shadow: 0 1px 2px rgba(15,23,42,.05);
+    --bg: #f4f7f5; --surface: #ffffff; --surface-2: #eef4f0; --surface-3: #dfe9e3;
+    --line: #dce7e0; --line-strong: #c3d4ca;
+    --fg: #0b0f0d; --heading: #0b0f0d; --muted: #46564d; --faint: #5b6b62;
+    --primary: #047857; --primary-2: #10b981; --primary-soft: rgba(4,120,87,.09); --on-primary: #ffffff;
+    --accent: #0b0f0d; --accent-soft: rgba(11,15,13,.05); --on-accent: #ffffff;
+    --home: #047857; --on-home: #ffffff; --away: #0b0f0d; --on-away: #ffffff; --draw: #c8d3cc;
+    --win: #047857; --win-soft: rgba(4,120,87,.12); --loss: #dc2626; --loss-soft: rgba(220,38,38,.1);
+    --zone-cl: #047857; --zone-el: #34d399; --zone-ecl: #a7f3d0; --zone-rel: #dc2626;
+    --pitch: #2e7d4f; --pitch-line: rgba(255,255,255,.5); --pitch-home: #ffffff; --pitch-away: #0b0f0d;
+    --bar-bg: rgba(11,15,13,.97); --bar-solid: #0b0f0d; --bar-fg: #ffffff; --bar-muted: rgba(255,255,255,.72); --bar-active: #34d399; --bar-hover: rgba(255,255,255,.07);
+    --shadow: 0 1px 2px rgba(11,15,13,.05);
     --text: 'BT Fira Sans', 'Fira Sans', var(--font-anthropic-sans), system-ui, sans-serif;
     --mono: 'BT Fira Code', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
     --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
@@ -54,30 +55,32 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .bt {
-      --bg: #0b1220; --surface: #111a2e; --surface-2: #16213a; --surface-3: #1f2c48;
-      --line: #1f2c48; --line-strong: #2a3a5c;
-      --fg: #e2e8f0; --heading: #bfdbfe; --muted: #a3b1c6; --faint: #8a99b0;
-      --primary: #60a5fa; --primary-2: #93c5fd; --primary-soft: rgba(96,165,250,.14); --on-primary: #0b1220;
-      --accent: #f59e0b; --accent-soft: rgba(245,158,11,.16); --on-accent: #0b1220;
-      --home: #60a5fa; --on-home: #0b1220; --away: #f59e0b; --on-away: #0b1220; --draw: #334155;
-      --win: #4ade80; --win-soft: rgba(74,222,128,.14); --loss: #f87171; --loss-soft: rgba(248,113,113,.14);
-      --zone-cl: #60a5fa; --zone-el: #f59e0b; --zone-ecl: #2dd4bf; --zone-rel: #f87171;
-      --pitch: #0a1830; --pitch-line: rgba(255,255,255,.22);
-      --bar-bg: rgba(11,18,32,.94); --shadow: none;
+      --bg: #0a0f0c; --surface: #111a15; --surface-2: #16221b; --surface-3: #1e2d24;
+      --line: #1e2d24; --line-strong: #2a3d31;
+      --fg: #ecfdf5; --heading: #ffffff; --muted: #a3b8ab; --faint: #8ba395;
+      --primary: #34d399; --primary-2: #6ee7b7; --primary-soft: rgba(52,211,153,.14); --on-primary: #052e1c;
+      --accent: #ffffff; --accent-soft: rgba(255,255,255,.06); --on-accent: #0a0f0c;
+      --home: #34d399; --on-home: #052e1c; --away: #f9fafb; --on-away: #0a0f0c; --draw: #2f3f35;
+      --win: #34d399; --win-soft: rgba(52,211,153,.14); --loss: #f87171; --loss-soft: rgba(248,113,113,.14);
+      --zone-cl: #34d399; --zone-el: #6ee7b7; --zone-ecl: #a7f3d0; --zone-rel: #f87171;
+      --pitch: #2e7d4f; --pitch-line: rgba(255,255,255,.45); --pitch-home: #ffffff; --pitch-away: #0a0f0c;
+      --bar-bg: rgba(0,0,0,.96); --bar-solid: #000000; --bar-fg: #ffffff; --bar-muted: rgba(255,255,255,.7); --bar-active: #34d399; --bar-hover: rgba(255,255,255,.07);
+      --shadow: none;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] .bt {
-    --bg: #0b1220; --surface: #111a2e; --surface-2: #16213a; --surface-3: #1f2c48;
-    --line: #1f2c48; --line-strong: #2a3a5c;
-    --fg: #e2e8f0; --heading: #bfdbfe; --muted: #a3b1c6; --faint: #8a99b0;
-    --primary: #60a5fa; --primary-2: #93c5fd; --primary-soft: rgba(96,165,250,.14); --on-primary: #0b1220;
-    --accent: #f59e0b; --accent-soft: rgba(245,158,11,.16); --on-accent: #0b1220;
-    --home: #60a5fa; --on-home: #0b1220; --away: #f59e0b; --on-away: #0b1220; --draw: #334155;
-    --win: #4ade80; --win-soft: rgba(74,222,128,.14); --loss: #f87171; --loss-soft: rgba(248,113,113,.14);
-    --zone-cl: #60a5fa; --zone-el: #f59e0b; --zone-ecl: #2dd4bf; --zone-rel: #f87171;
-    --pitch: #0a1830; --pitch-line: rgba(255,255,255,.22);
-    --bar-bg: rgba(11,18,32,.94); --shadow: none;
+    --bg: #0a0f0c; --surface: #111a15; --surface-2: #16221b; --surface-3: #1e2d24;
+    --line: #1e2d24; --line-strong: #2a3d31;
+    --fg: #ecfdf5; --heading: #ffffff; --muted: #a3b8ab; --faint: #8ba395;
+    --primary: #34d399; --primary-2: #6ee7b7; --primary-soft: rgba(52,211,153,.14); --on-primary: #052e1c;
+    --accent: #ffffff; --accent-soft: rgba(255,255,255,.06); --on-accent: #0a0f0c;
+    --home: #34d399; --on-home: #052e1c; --away: #f9fafb; --on-away: #0a0f0c; --draw: #2f3f35;
+    --win: #34d399; --win-soft: rgba(52,211,153,.14); --loss: #f87171; --loss-soft: rgba(248,113,113,.14);
+    --zone-cl: #34d399; --zone-el: #6ee7b7; --zone-ecl: #a7f3d0; --zone-rel: #f87171;
+    --pitch: #2e7d4f; --pitch-line: rgba(255,255,255,.45); --pitch-home: #ffffff; --pitch-away: #0a0f0c;
+    --bar-bg: rgba(0,0,0,.96); --bar-solid: #000000; --bar-fg: #ffffff; --bar-muted: rgba(255,255,255,.7); --bar-active: #34d399; --bar-hover: rgba(255,255,255,.07);
+    --shadow: none;
     color-scheme: dark;
   }
   .bt *, .bt *::before, .bt *::after { box-sizing: border-box; }
@@ -88,30 +91,30 @@
   .bt-ico { width: var(--ico); height: var(--ico); flex: none; }
 
   /* Kopf + Navigation */
-  .bt-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; background: var(--bar-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .bt-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; background: var(--bar-bg); backdrop-filter: blur(10px); border-bottom: 3px solid var(--primary-2); color: var(--bar-fg); }
   .bt-brand { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding-block: var(--s3) var(--s1); }
   .bt-mark { display: flex; align-items: center; gap: var(--s3); min-width: 0; }
-  .bt-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; flex: none; }
+  .bt-logo { width: 36px; height: 36px; border-radius: 10px; background: #10b981; color: #0b0f0d; display: grid; place-items: center; flex: none; }
   .bt-logo .bt-ico { width: 22px; height: 22px; }
-  .bt-title { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.15; color: var(--heading); letter-spacing: -.01em; }
-  .bt-sub { margin: 0; color: var(--faint); font-size: 12.5px; }
+  .bt-title { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.15; color: var(--bar-fg); letter-spacing: -.01em; }
+  .bt-sub { margin: 0; color: var(--bar-muted); font-size: 12.5px; }
   .bt-md { flex: none; text-align: right; line-height: 1.1; }
-  .bt-md .k { display: block; color: var(--faint); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-  .bt-md .v { font-family: var(--mono); font-weight: 700; font-size: 22px; color: var(--accent); }
+  .bt-md .k { display: block; color: var(--bar-muted); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+  .bt-md .v { font-family: var(--mono); font-weight: 700; font-size: 22px; color: var(--bar-active); }
   .bt-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: -1px; }
-  .bt-tab { appearance: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; min-height: 52px; padding: var(--s1) 2px; cursor: pointer; border-bottom: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
-  .bt-tab:hover { color: var(--fg); background: var(--surface-2); }
-  .bt-tab:active { background: var(--surface-3); }
-  .bt-tab[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
+  .bt-tab { appearance: none; border: 0; background: none; color: var(--bar-muted); font: inherit; font-size: 12px; font-weight: 600; min-height: 52px; padding: var(--s1) 2px; cursor: pointer; border-bottom: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+  .bt-tab:hover { color: var(--bar-fg); background: var(--bar-hover); }
+  .bt-tab:active { background: var(--bar-hover); }
+  .bt-tab[aria-selected="true"] { color: var(--bar-active); border-bottom-color: var(--bar-active); }
   @media (min-width: 760px) {
     .bt-tabs { display: flex; gap: var(--s1); }
     .bt-tab { flex-direction: row; gap: var(--s2); font-size: 14px; padding: 0 var(--s4); min-height: 46px; border-radius: 8px 8px 0 0; }
   }
   @media (max-width: 759px) {
-    .bt-site .bt-bar { backdrop-filter: none; background: var(--surface); }
-    .bt-site .bt-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--bar-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--line); margin: 0; padding: 0 max(4px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(4px, env(safe-area-inset-left, 0px)); }
+    .bt-site .bt-bar { backdrop-filter: none; background: var(--bar-solid); }
+    .bt-site .bt-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--bar-solid); border-top: 1px solid rgba(255,255,255,.12); margin: 0; padding: 0 max(4px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(4px, env(safe-area-inset-left, 0px)); }
     .bt-site .bt-tab { border-bottom: 0; border-top: 2px solid transparent; }
-    .bt-site .bt-tab[aria-selected="true"] { border-top-color: var(--primary); }
+    .bt-site .bt-tab[aria-selected="true"] { border-top-color: var(--bar-active); }
     .bt-site .bt { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
   }
 
@@ -138,8 +141,8 @@
   .bt-kpi .k { color: var(--faint); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
   .bt-kpi .v { font-family: var(--mono); font-weight: 700; font-size: 26px; line-height: 1.15; color: var(--heading); }
   .bt-kpi .v small { font-size: 15px; color: var(--muted); margin-left: 2px; }
-  .bt-kpi.hl { border-color: var(--accent); background: linear-gradient(0deg, var(--accent-soft), var(--accent-soft)), var(--surface); }
-  .bt-kpi.hl .v { color: var(--accent); }
+  .bt-kpi.hl { border-color: var(--primary); border-width: 1px 1px 1px 4px; background: linear-gradient(0deg, var(--primary-soft), var(--primary-soft)), var(--surface); }
+  .bt-kpi.hl .v { color: var(--primary); }
   .bt-kpi .s { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bt-kpi .s b { color: var(--fg); font-weight: 600; }
 
@@ -158,7 +161,7 @@
   .bt-team > span:not(.bt-crest) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bt-team.home { justify-content: flex-end; text-align: right; }
   .bt-crest { flex: none; width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; font-family: var(--mono); font-size: 9px; font-weight: 700; color: #fff; }
-  .bt-pill { min-width: 60px; text-align: center; padding: 4px 10px; border-radius: 8px; background: var(--primary); color: var(--on-primary); font-family: var(--mono); font-weight: 700; font-size: 18px; line-height: 1.2; }
+  .bt-pill { min-width: 60px; text-align: center; padding: 4px 10px; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-family: var(--mono); font-weight: 700; font-size: 18px; line-height: 1.2; }
   .bt-chev { width: 20px; height: 20px; color: var(--faint); transition: transform var(--dur) var(--ease); }
   .bt-match[open] .bt-chev, details.bt-card[open] .bt-chev { transform: rotate(180deg); }
   .bt-prob { display: grid; grid-template-columns: 44px 1fr 20px; gap: var(--s3); align-items: center; }
@@ -182,6 +185,9 @@
   .bt-scores { display: flex; flex-wrap: wrap; gap: var(--s2); justify-content: center; }
   .bt-chip { background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
   .bt-chip b { font-family: var(--mono); margin-right: 6px; }
+  .bt-miss { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); font-size: 12.5px; color: var(--muted); }
+  .bt-miss span:last-child { text-align: right; }
+  .bt-miss b { color: var(--fg); font-weight: 600; }
 
   /* Filter-Chips (umbrechend, wie vom Skill empfohlen) */
   .bt-chips { display: flex; flex-wrap: wrap; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); }
@@ -230,7 +236,7 @@
 
   /* Schusskarte */
   .bt-select { appearance: none; background-color: var(--surface); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--r-sm); font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; max-width: 100%; padding: 0 38px 0 12px; cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%233b82f6' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; }
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%23047857' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; }
   .bt-ctl { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; padding: var(--s3) var(--s4); }
   .bt-ctl label { color: var(--muted); font-size: 13px; font-weight: 600; }
   .bt-shot { position: relative; padding: 0 var(--s4) var(--s2); min-height: 220px; }
@@ -240,7 +246,7 @@
   .bt-shotsum .m { text-align: center; color: var(--faint); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
   .bt-shotkey { display: flex; flex-wrap: wrap; gap: 6px var(--s4); padding: var(--s2) var(--s4) var(--s3); color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); }
   .bt-shotkey span { display: inline-flex; align-items: center; gap: 6px; }
-  .bt-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .bt-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 1.5px var(--pitch); }
 
   /* Bilanz */
   .bt-chart { position: relative; padding: var(--s3) var(--s4); min-height: 220px; }
@@ -348,7 +354,7 @@
           </div>
         </div>
       </div>
-      <p class="bt-foot">In der Mitte steht der Tipp: das Ergebnis, das innerhalb des wahrscheinlichsten Ausgangs am besten zu den erwarteten Toren passt. Balken und Werte: 1 = Heimsieg (blau) · X = Unentschieden · 2 = Auswärtssieg (orange).</p>
+      <p class="bt-foot">In der Mitte steht der Tipp: das Ergebnis, das innerhalb des wahrscheinlichsten Ausgangs am besten zu den erwarteten Toren passt. Balken und Werte: 1 = Heimsieg (grün) · X = Unentschieden (grau) · 2 = Auswärtssieg (schwarz).</p>
     </section>
 
     <!-- TABELLE -->
@@ -470,6 +476,7 @@
             <dt>Teamstärke</dt><dd>aus Toren und xG gelernt, xG zählt zu <b class="num" data-draw="m-wxg" data-source="modell" data-field="xg_gewicht" data-row="0">—</b> %</dd>
             <dt>xG</dt><dd>eigenes Modell aus <span class="num" data-draw="m-shots" data-source="modell" data-field="raum_schuesse" data-row="0">—</span> Schüssen mit Position (<span class="num" data-draw="m-raum" data-source="modell" data-field="raum_spiele" data-row="0">—</span> Spiele): Entfernung, Winkel, Kopfball, Freistoß, Flanke, Steilpass, Konter. Elfmeter <span class="num" data-draw="m-pen" data-source="modell" data-field="elfmeter_xg" data-row="0">—</span>. Ältere Spiele: Schätzung aus Schusszahlen.</dd>
             <dt>FotMob-xG</dt><dd><span class="num" data-draw="m-fmn" data-source="modell" data-field="fotmob_spiele" data-row="0">—</span> Spiele eingetragen, zählen zu <b class="num" data-draw="m-fmw" data-source="modell" data-field="fotmob_gewicht" data-row="0">—</b> % (steigt von 20 auf 70 %)</dd>
+            <dt>Ausfälle</dt><dd>Stammspieler (Startelf in mind. der Hälfte der letzten 10 Spiele, gewichtet nach Toren und Vorlagen), die vermutlich fehlen: Rot oder Gelbsperre im letzten Spiel oder nicht im letzten Kader. Fehlt ein Viertel dieser Stärke, verschiebt das die erwarteten Tore um <b class="num" data-draw="m-aus" data-source="modell" data-field="ausfall_effekt_pct" data-row="0">—</b> %. Verletzungsmeldungen vor dem Spiel kennt das Modell nicht.</dd>
             <dt>Form-Index (4 Spiele)</dt><dd data-draw="m-gew" data-source="modell" data-field="gewichte" data-row="0">—</dd>
             <dt>Wirkung der Form</dt><dd>1 Punkt Unterschied verschiebt die erwarteten Tore um <b class="num" data-draw="m-fe" data-source="modell" data-field="form_effekt_pct" data-row="0">—</b> %</dd>
             <dt>Kalibrierung</dt><dd>Korrektur für knappe Ergebnisse zu <b class="num" data-draw="m-rho" data-source="modell" data-field="rho_gewicht" data-row="0">—</b> %, Unentschieden ×<span class="num" data-draw="m-df" data-source="modell" data-field="unentschieden_faktor" data-row="0">—</span>, Siegchancen geschärft mit Faktor <span class="num" data-draw="m-sch" data-source="modell" data-field="schaerfe" data-row="0">—</span>. So passen die Prozente im Test an 358 Spielen zur tatsächlichen Häufigkeit. Der Tipp richtet sich weiter nach den erwarteten Toren.</dd>
@@ -684,6 +691,7 @@
   B.text('m-gew', 'modell', 'gewichte', first, (v) => String(v).replace(/(\d)\.(\d)/g, '$1,$2'));
   B.text('m-fe', 'modell', 'form_effekt_pct', first, pct1);
   B.text('m-rho', 'modell', 'rho_gewicht', first, pct0);
+  B.text('m-aus', 'modell', 'ausfall_effekt_pct', first, pct1);
   B.text('m-df', 'modell', 'unentschieden_faktor', first, (v) => B.nf2.format(Number(v)));
   B.text('m-sch', 'modell', 'schaerfe', first, (v) => B.nf1.format(Number(v)));
   B.text('m-heim', 'modell', 'heimvorteil', first, (v) => B.nf2.format(Number(v)));
@@ -780,6 +788,13 @@
       addRow(gp, 'Siegchance %', r.p_heim, r.p_gast, f1, 'high', ['prognosen', 'p_heim', w], ['prognosen', 'p_gast', w]);
       addRow(gp, 'Erwartete Tore', r.xg_heim, r.xg_gast, f2, 'high', ['prognosen', 'xg_heim', w], ['prognosen', 'xg_gast', w]);
       addRow(gp, 'Form-Index', r.form_heim, r.form_gast, fs, 'high', ['prognosen', 'form_heim', w], ['prognosen', 'form_gast', w]);
+      if (r.ausfall_heim != null && (Number(r.ausfall_heim) > 0 || Number(r.ausfall_gast) > 0)) {
+        const ga = group('Vermutete Ausfälle');
+        addRow(ga, 'Fehlende Stammkraft %', r.ausfall_heim, r.ausfall_gast, f1, 'low', ['prognosen', 'ausfall_heim', w], ['prognosen', 'ausfall_gast', w]);
+        const mi = B.el('div', 'bt-miss');
+        mi.append(B.mark(B.el('span', null, r.fehlen_heim || 'keine'), 'prognosen', 'fehlen_heim', w), B.mark(B.el('span', null, r.fehlen_gast || 'keine'), 'prognosen', 'fehlen_gast', w));
+        ga.append(mi);
+      }
       if (H && A) {
         const tw = (t) => 'team=' + encodeURIComponent(t);
         const gf = group('Letzte 4 Spiele');
