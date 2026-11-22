@@ -1,3 +1,5 @@
-/* Cormorant (SIL Open Font License 1.1, The Cormorant Project Authors), Latin-Untermenge – siehe fonts/OFL-Cormorant.txt */
-@font-face{font-family:'BT Cormorant';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/cormorant-latin-600-normal.woff2') format('woff2');}
-@font-face{font-family:'BT Cormorant';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/cormorant-latin-700-normal.woff2') format('woff2');}
+/* Barlow und Barlow Condensed (SIL Open Font License 1.1, The Barlow Project Authors), Latin-Untermenge – siehe fonts/OFL-Barlow.txt */
+@font-face{font-family:'BT Barlow Condensed';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/barlow-condensed-latin-600-normal.woff2') format('woff2');}
+@font-face{font-family:'BT Barlow Condensed';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/barlow-condensed-latin-700-normal.woff2') format('woff2');}
+@font-face{font-family:'BT Barlow';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/barlow-latin-400-normal.woff2') format('woff2');}
+@font-face{font-family:'BT Barlow';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/barlow-latin-600-normal.woff2') format('woff2');}
