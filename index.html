@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bundesliga-Tipp</title>
 <meta name="description" content="Prognosen, Tabelle und Analysen zur Bundesliga – berechnet mit einem eigenen statistischen Modell.">
-<meta name="theme-color" content="#d20515">
+<meta name="theme-color" content="#1e40af">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bundesliga-Tipp">
@@ -15,8 +15,8 @@
 <link rel="stylesheet" href="fonts.css">
 <style>
   :root { --font-anthropic-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; color-scheme: light dark; }
-  html, body { margin: 0; background: #f2f3f5; min-height: 100%; }
-  @media (prefers-color-scheme: dark) { html, body { background: #0d0f12; } }
+  html, body { margin: 0; background: #f8fafc; min-height: 100%; }
+  @media (prefers-color-scheme: dark) { html, body { background: #0b1220; } }
   body { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .dash-skeleton { position: relative; color: transparent !important; }
   .dash-skeleton::after { content: ""; position: absolute; inset: 6px 0; border-radius: 8px; background: linear-gradient(90deg, rgba(128,128,128,.08), rgba(128,128,128,.16), rgba(128,128,128,.08)); }
@@ -27,244 +27,266 @@
 <body>
 <div id="dash-root" class="bt-site">
 <style>
-  /* Layout: helle, klare Sport-App (Bundesliga-Farbwelt: Weiß, Grau, Rot), dunkle Variante folgt dem Gerät.
-     Kopf mit Navigation aus Symbol + Text; am Handy liegt sie auf der Website unten. Karten in einer Spalte. */
+  /* Layout (Skill „Data-Dense Dashboard“): Kopf mit Navigation, darunter ein dichtes Kartenraster.
+     Desktop: Spiele links, Kurztabelle rechts. Farben: Blau = Daten/Heim, Bernstein = Hervorhebung/Gast.
+     Schrift: Fira Sans für Text, Fira Code für Zahlen. Abstände im 4/8-px-Raster. */
   #dash-root { --dash-gutter: 0; }
   .bt {
-    --bg: #f2f3f5; --surface: #ffffff; --surface-2: #f4f5f7; --surface-3: #e8eaed;
-    --line: #e5e7ea; --line-strong: #d4d7dc;
-    --fg: #101318; --muted: #59616c; --faint: #6f7781;
-    --accent: #d20515; --accent-soft: rgba(210,5,21,.08); --accent-line: rgba(210,5,21,.28); --on-accent: #ffffff;
-    --home: #d20515; --on-home: #ffffff; --away: #1f2937; --on-away: #ffffff; --draw: #c5cad1;
-    --win: #11804a; --win-soft: rgba(17,128,74,.12); --loss: #d20515; --loss-soft: rgba(210,5,21,.10); --warn: #b45309;
-    --zone-cl: #1d4ed8; --zone-el: #f59e0b; --zone-ecl: #0d9488; --zone-rel: #d20515;
-    --pitch: #1d6b45; --pitch-line: rgba(255,255,255,.55); --pitch-home: #ffffff; --pitch-away: #fde047;
-    --bar-bg: rgba(255,255,255,.92); --shadow: 0 1px 2px rgba(16,19,24,.06), 0 1px 1px rgba(16,19,24,.04);
-    --display: 'BT Barlow Condensed', 'Barlow Condensed', 'Arial Narrow', sans-serif;
-    --text: 'BT Barlow', 'Barlow', var(--font-anthropic-sans), system-ui, sans-serif;
-    --r: 14px; --r-sm: 10px;
+    --bg: #f8fafc; --surface: #ffffff; --surface-2: #f1f5f9; --surface-3: #e2e8f0;
+    --line: #dbe3ef; --line-strong: #c6d2e3;
+    --fg: #0f172a; --heading: #1e3a8a; --muted: #475569; --faint: #64748b;
+    --primary: #1e40af; --primary-2: #3b82f6; --primary-soft: rgba(30,64,175,.08); --on-primary: #ffffff;
+    --accent: #d97706; --accent-soft: rgba(217,119,6,.12); --on-accent: #111827;
+    --home: #1e40af; --on-home: #ffffff; --away: #d97706; --on-away: #111827; --draw: #cbd5e1;
+    --win: #15803d; --win-soft: rgba(21,128,61,.12); --loss: #dc2626; --loss-soft: rgba(220,38,38,.1);
+    --zone-cl: #1e40af; --zone-el: #d97706; --zone-ecl: #0d9488; --zone-rel: #dc2626;
+    --pitch: #0f2347; --pitch-line: rgba(255,255,255,.28); --pitch-home: #93c5fd; --pitch-away: #fbbf24;
+    --bar-bg: rgba(255,255,255,.94); --shadow: 0 1px 2px rgba(15,23,42,.05);
+    --text: 'BT Fira Sans', 'Fira Sans', var(--font-anthropic-sans), system-ui, sans-serif;
+    --mono: 'BT Fira Code', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+    --r: 12px; --r-sm: 8px; --ico: 20px;
+    --dur-fast: 150ms; --dur: 220ms; --ease: cubic-bezier(.2,.7,.2,1);
     color-scheme: light;
     background: var(--bg); color: var(--fg);
-    font-family: var(--text); font-size: 15px; line-height: 1.45;
-    padding-block: 0 32px; min-height: 100%;
+    font-family: var(--text); font-size: 15px; line-height: 1.5;
+    padding-block: 0 var(--s6); min-height: 100%;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .bt {
-      --bg: #0d0f12; --surface: #16191e; --surface-2: #1d2127; --surface-3: #272c33;
-      --line: #252a31; --line-strong: #323841;
-      --fg: #f3f4f6; --muted: #a5acb7; --faint: #8b929c;
-      --accent: #ff3b4a; --accent-soft: rgba(255,59,74,.12); --accent-line: rgba(255,59,74,.4); --on-accent: #ffffff;
-      --home: #ff3b4a; --on-home: #ffffff; --away: #e5e7eb; --on-away: #111418; --draw: #3a4049;
-      --win: #34d399; --win-soft: rgba(52,211,153,.14); --loss: #ff5c69; --loss-soft: rgba(255,92,105,.14); --warn: #fbbf24;
-      --zone-cl: #60a5fa; --zone-el: #fbbf24; --zone-ecl: #2dd4bf; --zone-rel: #ff5c69;
-      --pitch: #14432d; --pitch-line: rgba(255,255,255,.35); --pitch-home: #ffffff; --pitch-away: #fde047;
-      --bar-bg: rgba(13,15,18,.92); --shadow: none;
+      --bg: #0b1220; --surface: #111a2e; --surface-2: #16213a; --surface-3: #1f2c48;
+      --line: #1f2c48; --line-strong: #2a3a5c;
+      --fg: #e2e8f0; --heading: #bfdbfe; --muted: #a3b1c6; --faint: #8a99b0;
+      --primary: #60a5fa; --primary-2: #93c5fd; --primary-soft: rgba(96,165,250,.14); --on-primary: #0b1220;
+      --accent: #f59e0b; --accent-soft: rgba(245,158,11,.16); --on-accent: #0b1220;
+      --home: #60a5fa; --on-home: #0b1220; --away: #f59e0b; --on-away: #0b1220; --draw: #334155;
+      --win: #4ade80; --win-soft: rgba(74,222,128,.14); --loss: #f87171; --loss-soft: rgba(248,113,113,.14);
+      --zone-cl: #60a5fa; --zone-el: #f59e0b; --zone-ecl: #2dd4bf; --zone-rel: #f87171;
+      --pitch: #0a1830; --pitch-line: rgba(255,255,255,.22);
+      --bar-bg: rgba(11,18,32,.94); --shadow: none;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] .bt {
-    --bg: #0d0f12; --surface: #16191e; --surface-2: #1d2127; --surface-3: #272c33;
-    --line: #252a31; --line-strong: #323841;
-    --fg: #f3f4f6; --muted: #a5acb7; --faint: #8b929c;
-    --accent: #ff3b4a; --accent-soft: rgba(255,59,74,.12); --accent-line: rgba(255,59,74,.4); --on-accent: #ffffff;
-    --home: #ff3b4a; --on-home: #ffffff; --away: #e5e7eb; --on-away: #111418; --draw: #3a4049;
-    --win: #34d399; --win-soft: rgba(52,211,153,.14); --loss: #ff5c69; --loss-soft: rgba(255,92,105,.14); --warn: #fbbf24;
-    --zone-cl: #60a5fa; --zone-el: #fbbf24; --zone-ecl: #2dd4bf; --zone-rel: #ff5c69;
-    --pitch: #14432d; --pitch-line: rgba(255,255,255,.35); --pitch-home: #ffffff; --pitch-away: #fde047;
-    --bar-bg: rgba(13,15,18,.92); --shadow: none;
+    --bg: #0b1220; --surface: #111a2e; --surface-2: #16213a; --surface-3: #1f2c48;
+    --line: #1f2c48; --line-strong: #2a3a5c;
+    --fg: #e2e8f0; --heading: #bfdbfe; --muted: #a3b1c6; --faint: #8a99b0;
+    --primary: #60a5fa; --primary-2: #93c5fd; --primary-soft: rgba(96,165,250,.14); --on-primary: #0b1220;
+    --accent: #f59e0b; --accent-soft: rgba(245,158,11,.16); --on-accent: #0b1220;
+    --home: #60a5fa; --on-home: #0b1220; --away: #f59e0b; --on-away: #0b1220; --draw: #334155;
+    --win: #4ade80; --win-soft: rgba(74,222,128,.14); --loss: #f87171; --loss-soft: rgba(248,113,113,.14);
+    --zone-cl: #60a5fa; --zone-el: #f59e0b; --zone-ecl: #2dd4bf; --zone-rel: #f87171;
+    --pitch: #0a1830; --pitch-line: rgba(255,255,255,.22);
+    --bar-bg: rgba(11,18,32,.94); --shadow: none;
     color-scheme: dark;
   }
   .bt *, .bt *::before, .bt *::after { box-sizing: border-box; }
   .bt [hidden] { display: none !important; }
-  .bt-wrap { max-width: 880px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .bt :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
-  .bt td, .bt .bt-problbl, .bt .bt-val, .bt .bt-lrow, .bt .bt-time { font-variant-numeric: tabular-nums; }
+  .bt-wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .bt :focus-visible { outline: 2px solid var(--primary-2); outline-offset: 2px; border-radius: 6px; }
+  .bt .num, .bt td, .bt .bt-val, .bt .bt-problbl b, .bt .bt-lrow .v { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: -.01em; }
+  .bt-ico { width: var(--ico); height: var(--ico); flex: none; }
 
-  /* Kopf und Navigation */
-  .bt-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; background: var(--bar-bg); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
-  .bt-bar::before { content: ""; display: block; height: 3px; background: var(--accent); }
-  .bt-brand { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px 6px; }
-  .bt-mark { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .bt-crestmark { width: 34px; height: 34px; flex: none; border-radius: 9px; background: var(--accent); display: grid; place-items: center; }
-  .bt-crestmark svg { width: 20px; height: 20px; }
-  .bt-title { margin: 0; font-family: var(--display); font-weight: 700; font-size: 24px; line-height: 1; letter-spacing: .01em; text-transform: uppercase; }
-  .bt-sub { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
-  .bt-md { flex: none; display: flex; align-items: baseline; gap: 0; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 999px; padding: 4px 12px; }
-  .bt-md .k { color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-  .bt-md .v { font-family: var(--display); font-weight: 700; font-size: 20px; line-height: 1; color: var(--accent); }
+  /* Kopf + Navigation */
+  .bt-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; background: var(--bar-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .bt-brand { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding-block: var(--s3) var(--s1); }
+  .bt-mark { display: flex; align-items: center; gap: var(--s3); min-width: 0; }
+  .bt-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; flex: none; }
+  .bt-logo .bt-ico { width: 22px; height: 22px; }
+  .bt-title { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.15; color: var(--heading); letter-spacing: -.01em; }
+  .bt-sub { margin: 0; color: var(--faint); font-size: 12.5px; }
+  .bt-md { flex: none; text-align: right; line-height: 1.1; }
+  .bt-md .k { display: block; color: var(--faint); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+  .bt-md .v { font-family: var(--mono); font-weight: 700; font-size: 22px; color: var(--accent); }
   .bt-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: -1px; }
-  .bt-tab { appearance: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12.5px; font-weight: 600; min-height: 52px; padding: 6px 2px 8px; cursor: pointer; border-bottom: 3px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; transition: color .2s, border-color .2s; }
-  .bt-tab svg { width: 20px; height: 20px; flex: none; }
-  .bt-tab:hover { color: var(--fg); }
-  .bt-tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
-  @media (min-width: 720px) {
-    .bt-tabs { display: flex; gap: 4px; }
-    .bt-tab { flex-direction: row; gap: 8px; font-size: 14px; padding: 0 16px; min-height: 48px; }
-    .bt-tab svg { width: 18px; height: 18px; }
+  .bt-tab { appearance: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; min-height: 52px; padding: var(--s1) 2px; cursor: pointer; border-bottom: 2px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; transition: color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+  .bt-tab:hover { color: var(--fg); background: var(--surface-2); }
+  .bt-tab:active { background: var(--surface-3); }
+  .bt-tab[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); }
+  @media (min-width: 760px) {
+    .bt-tabs { display: flex; gap: var(--s1); }
+    .bt-tab { flex-direction: row; gap: var(--s2); font-size: 14px; padding: 0 var(--s4); min-height: 46px; border-radius: 8px 8px 0 0; }
   }
-  /* Website am Handy: Navigation unten, mit dem Daumen erreichbar */
-  @media (max-width: 719px) {
+  @media (max-width: 759px) {
     .bt-site .bt-bar { backdrop-filter: none; background: var(--surface); }
-    .bt-site .bt-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--bar-bg); backdrop-filter: blur(12px); border-top: 1px solid var(--line); margin: 0; padding: 0 max(4px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(4px, env(safe-area-inset-left, 0px)); }
-    .bt-site .bt-tab { border-bottom: 0; border-top: 3px solid transparent; }
-    .bt-site .bt-tab[aria-selected="true"] { border-top-color: var(--accent); }
-    .bt-site .bt { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+    .bt-site .bt-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--bar-bg); backdrop-filter: blur(10px); border-top: 1px solid var(--line); margin: 0; padding: 0 max(4px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(4px, env(safe-area-inset-left, 0px)); }
+    .bt-site .bt-tab { border-bottom: 0; border-top: 2px solid transparent; }
+    .bt-site .bt-tab[aria-selected="true"] { border-top-color: var(--primary); }
+    .bt-site .bt { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
   }
 
-  /* Flächen */
-  .bt-panel { display: flex; flex-direction: column; gap: 14px; padding-top: 14px; }
+  /* Raster + Karten */
+  .bt-panel { display: grid; gap: var(--s3); padding-top: var(--s3); }
+  .bt-grid { display: grid; gap: var(--s3); }
+  @media (min-width: 1000px) { .bt-grid.two { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; } }
+  .bt-grid > *, .bt-panel > * { min-width: 0; }
   .bt-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
-  .bt-card-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 16px 10px; }
-  .bt-card-h h2, .bt-card-h h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 20px; line-height: 1.1; letter-spacing: .01em; text-transform: uppercase; }
-  .bt-card-h h3 { font-size: 17px; }
+  .bt-card-h { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); }
+  .bt-card-h h2, .bt-card-h h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--heading); letter-spacing: -.005em; }
   .bt-hint { color: var(--faint); font-size: 12px; text-align: right; }
-  .bt-eyebrow { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-  .bt-note { color: var(--muted); font-size: 13px; margin: 0; padding: 0 16px 14px; max-width: 72ch; }
-  .bt-foot { color: var(--faint); font-size: 12px; line-height: 1.55; padding: 0 2px; margin: 0; max-width: 80ch; }
-  .bt-empty { padding: 16px; color: var(--muted); font-size: 13px; margin: 0; }
+  .bt-note { color: var(--muted); font-size: 13px; margin: 0; padding: var(--s3) var(--s4); max-width: 75ch; }
+  .bt-foot { color: var(--faint); font-size: 12px; line-height: 1.55; margin: 0; max-width: 90ch; }
+  .bt-empty { padding: var(--s4); color: var(--muted); font-size: 13px; margin: 0; }
   .bt .dash-skeleton { min-height: 56px; }
+  .bt-linkbtn { appearance: none; border: 0; background: none; color: var(--primary); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: var(--s2) 0; min-height: 36px; }
+  .bt-linkbtn:hover { text-decoration: underline; }
 
-  /* Überblick: drei kompakte Kennzahlen in einer Zeile */
-  .bt-hero { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .bt-hero > div { padding: 12px 14px; display: grid; gap: 2px; align-content: start; min-width: 0; }
-  .bt-hero > div + div { border-left: 1px solid var(--line); }
-  .bt-hero .big { font-family: var(--display); font-weight: 700; font-size: 30px; line-height: 1.05; color: var(--fg); }
-  .bt-hero .big small { font-size: 17px; color: var(--muted); margin-left: 1px; }
-  .bt-hero .big.accent { color: var(--accent); }
-  .bt-hero .sub { color: var(--muted); font-size: 12px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .bt-hero .sub b { color: var(--fg); font-weight: 600; }
+  /* Kennzahlen */
+  .bt-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s3); }
+  @media (max-width: 759px) { .bt-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .bt-kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: var(--s3) var(--s4); display: grid; gap: 2px; min-width: 0; }
+  .bt-kpi .k { color: var(--faint); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .bt-kpi .v { font-family: var(--mono); font-weight: 700; font-size: 26px; line-height: 1.15; color: var(--heading); }
+  .bt-kpi .v small { font-size: 15px; color: var(--muted); margin-left: 2px; }
+  .bt-kpi.hl { border-color: var(--accent); background: linear-gradient(0deg, var(--accent-soft), var(--accent-soft)), var(--surface); }
+  .bt-kpi.hl .v { color: var(--accent); }
+  .bt-kpi .s { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bt-kpi .s b { color: var(--fg); font-weight: 600; }
 
   /* Spielliste */
-  .bt-day { padding: 9px 16px; background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border-top: 1px solid var(--line); }
-  .bt-day:first-child { border-top: 0; }
-  .bt-match { border-top: 1px solid var(--line); }
-  .bt-day + .bt-match { border-top: 0; }
-  .bt-match > summary { list-style: none; cursor: pointer; padding: 12px 16px; display: grid; gap: 8px; transition: background-color .2s; }
+  .bt-day { padding: var(--s2) var(--s4); background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+  .bt-match { border-bottom: 1px solid var(--line); }
+  .bt-match:last-child { border-bottom: 0; }
+  .bt-match > summary { list-style: none; cursor: pointer; padding: var(--s3) var(--s4); display: grid; gap: var(--s2); transition: background-color var(--dur-fast) var(--ease); }
   .bt-match > summary::-webkit-details-marker { display: none; }
   .bt-match > summary:hover { background: var(--surface-2); }
-  .bt-row { display: grid; grid-template-columns: 44px minmax(0,1fr) auto minmax(0,1fr) 18px; align-items: center; gap: 10px; }
-  .bt-time { color: var(--muted); font-size: 13px; font-weight: 600; }
-  .bt-time.live { color: var(--accent); font-weight: 700; }
-  .bt-team { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; font-size: 15px; }
+  .bt-match > summary:active { background: var(--surface-3); }
+  .bt-row { display: grid; grid-template-columns: 44px minmax(0,1fr) auto minmax(0,1fr) 20px; align-items: center; gap: var(--s3); }
+  .bt-time { color: var(--muted); font-family: var(--mono); font-size: 13px; font-weight: 600; }
+  .bt-time.live { color: var(--accent); }
+  .bt-team { display: flex; align-items: center; gap: var(--s2); min-width: 0; font-weight: 600; font-size: 15px; }
   .bt-team > span:not(.bt-crest) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bt-team.home { justify-content: flex-end; text-align: right; }
-  .bt-crest { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 8.5px; font-weight: 800; letter-spacing: .02em; color: #fff; }
-  .bt-pill { min-width: 58px; text-align: center; padding: 4px 10px; border-radius: 8px; background: var(--fg); color: var(--surface); font-family: var(--display); font-weight: 700; font-size: 21px; line-height: 1.1; }
-  .bt-chev { width: 18px; height: 18px; color: var(--faint); transition: transform .2s; }
+  .bt-crest { flex: none; width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; font-family: var(--mono); font-size: 9px; font-weight: 700; color: #fff; }
+  .bt-pill { min-width: 60px; text-align: center; padding: 4px 10px; border-radius: 8px; background: var(--primary); color: var(--on-primary); font-family: var(--mono); font-weight: 700; font-size: 18px; line-height: 1.2; }
+  .bt-chev { width: 20px; height: 20px; color: var(--faint); transition: transform var(--dur) var(--ease); }
   .bt-match[open] .bt-chev, details.bt-card[open] .bt-chev { transform: rotate(180deg); }
-  .bt-prob { display: grid; grid-template-columns: 44px 1fr 18px; gap: 10px; align-items: center; }
+  .bt-prob { display: grid; grid-template-columns: 44px 1fr 20px; gap: var(--s3); align-items: center; }
   .bt-probbar { display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden; }
   .bt-probbar > div { min-width: 3px; }
-  .bt-problbl { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 5px; }
-  .bt-problbl b { color: var(--fg); font-weight: 700; }
-  @media (max-width: 420px) { .bt-row { grid-template-columns: 38px minmax(0,1fr) auto minmax(0,1fr) 14px; gap: 7px; } .bt-prob { grid-template-columns: 38px 1fr 14px; gap: 7px; } .bt-team { font-size: 14px; gap: 6px; } .bt-crest { width: 22px; height: 22px; font-size: 7.5px; } .bt-pill { min-width: 50px; font-size: 19px; padding: 3px 7px; } }
+  .bt-problbl { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: var(--s1); }
+  .bt-problbl b { color: var(--fg); font-size: 12.5px; }
+  @media (max-width: 420px) { .bt-row { grid-template-columns: 38px minmax(0,1fr) auto minmax(0,1fr) 16px; gap: var(--s2); } .bt-prob { grid-template-columns: 38px 1fr 16px; gap: var(--s2); } .bt-team { font-size: 14px; gap: 6px; } .bt-crest { width: 22px; height: 22px; font-size: 8px; } .bt-pill { min-width: 52px; font-size: 16px; padding: 3px 7px; } }
 
-  .bt-detail { padding: 4px 16px 18px; display: grid; gap: 14px; background: var(--surface); }
-  .bt-group { display: grid; gap: 9px; }
-  .bt-group-t { margin: 6px 0 0; text-align: center; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-  .bt-cmp-row { display: grid; grid-template-columns: 72px 1fr 72px; align-items: center; gap: 8px; }
+  .bt-detail { padding: var(--s1) var(--s4) var(--s4); display: grid; gap: var(--s3); background: var(--surface); }
+  .bt-group { display: grid; gap: var(--s2); }
+  .bt-group-t { margin: var(--s2) 0 0; text-align: center; color: var(--faint); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .bt-cmp-row { display: grid; grid-template-columns: 76px 1fr 76px; align-items: center; gap: var(--s2); }
   .bt-cmp-lbl { text-align: center; font-size: 13px; color: var(--muted); }
-  .bt-val { justify-self: start; padding: 2px 9px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+  .bt-val { justify-self: start; padding: 1px 8px; border-radius: 6px; font-size: 13px; }
   .bt-val.r { justify-self: end; }
   .bt-val.lead-h { background: var(--home); color: var(--on-home); }
   .bt-val.lead-a { background: var(--away); color: var(--on-away); }
-  .bt-split { grid-column: 1 / -1; display: flex; gap: 3px; height: 4px; }
+  .bt-split { grid-column: 1 / -1; display: flex; gap: 2px; height: 4px; }
   .bt-split > div { border-radius: 2px; }
-  .bt-scores { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-  .bt-chip { background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
-  .bt-chip b { margin-right: 6px; }
+  .bt-scores { display: flex; flex-wrap: wrap; gap: var(--s2); justify-content: center; }
+  .bt-chip { background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
+  .bt-chip b { font-family: var(--mono); margin-right: 6px; }
+
+  /* Filter-Chips (umbrechend, wie vom Skill empfohlen) */
+  .bt-chips { display: flex; flex-wrap: wrap; gap: var(--s2); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--line); }
+  .bt-fchip { appearance: none; border: 1px solid var(--line-strong); background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; border-radius: 999px; padding: 0 var(--s3); min-height: 36px; cursor: pointer; transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+  .bt-fchip:hover { border-color: var(--primary-2); color: var(--fg); }
+  .bt-fchip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 
   /* Tabellen */
   .bt-tw { overflow-x: auto; }
   .bt-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  .bt-table th { color: var(--muted); font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; text-align: right; padding: 9px 8px; background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
-  .bt-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
-  .bt-table tbody tr { transition: background-color .2s; }
+  .bt-table th { color: var(--faint); font-weight: 700; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; text-align: right; padding: var(--s2); background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .bt-table td { padding: 9px var(--s2); border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; font-size: 13px; }
+  .bt-table tbody tr { transition: background-color var(--dur-fast) var(--ease); }
   .bt-table tbody tr:hover { background: var(--surface-2); }
   .bt-table tr:last-child td { border-bottom: 0; }
   .bt-table .l { text-align: left; }
-  .bt-table th:first-child, .bt-table td:first-child { padding-left: 16px; }
-  .bt-table th:last-child, .bt-table td:last-child { padding-right: 16px; }
-  .bt-table td.team { font-weight: 600; }
-  .bt-table td.team > div { display: flex; align-items: center; gap: 9px; }
-  .bt-table td.pos { position: relative; color: var(--muted); font-weight: 600; }
-  .bt-zone { position: absolute; left: 0; top: 6px; bottom: 6px; width: 4px; border-radius: 0 3px 3px 0; }
-  .bt-table td.pts { font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--fg); }
+  .bt-table th:first-child, .bt-table td:first-child { padding-left: var(--s4); }
+  .bt-table th:last-child, .bt-table td:last-child { padding-right: var(--s4); }
+  .bt-table td.team { font-family: var(--text); font-weight: 600; font-size: 14px; letter-spacing: 0; }
+  .bt-table td.team > div { display: flex; align-items: center; gap: var(--s2); }
+  .bt-table td.pos { position: relative; color: var(--muted); }
+  .bt-zone { position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 0 2px 2px 0; }
+  .bt-table td.pts { color: var(--heading); font-weight: 700; font-size: 14px; }
+  .bt-sortbtn { appearance: none; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 4px 0; min-height: 28px; }
+  .bt-sortbtn .bt-ico { width: 13px; height: 13px; opacity: .45; }
+  th[aria-sort="ascending"] .bt-sortbtn, th[aria-sort="descending"] .bt-sortbtn { color: var(--primary); }
+  th[aria-sort="ascending"] .bt-sortbtn .bt-ico, th[aria-sort="descending"] .bt-sortbtn .bt-ico { opacity: 1; }
   .bt-form { display: inline-flex; gap: 3px; }
-  .bt-form span { width: 20px; height: 20px; border-radius: 5px; display: grid; place-items: center; font-size: 10px; font-weight: 800; }
+  .bt-form span { width: 19px; height: 19px; border-radius: 4px; display: grid; place-items: center; font-family: var(--mono); font-size: 10px; font-weight: 700; }
   .bt-form .S { background: var(--win); color: #fff; } .bt-form .U { background: var(--draw); color: var(--fg); } .bt-form .N { background: var(--loss); color: #fff; }
-  .bt-pos { color: var(--win); font-weight: 600; } .bt-neg { color: var(--loss); font-weight: 600; }
-  .bt-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 16px 14px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); }
-  .bt-legend span { display: inline-flex; align-items: center; gap: 7px; }
-  .bt-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .bt-pos { color: var(--win); } .bt-neg { color: var(--loss); }
+  .bt-legend { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); padding: var(--s3) var(--s4); color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); }
+  .bt-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .bt-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 
-  /* Analyse */
-  .bt-leaders { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 14px; }
-  .bt-leaders .bt-card { min-width: 0; }
-  .bt-lists { padding-bottom: 10px; min-height: 120px; }
-  .bt-lrow { display: grid; grid-template-columns: 16px 26px minmax(0,1fr) auto; gap: 9px; align-items: center; padding: 6px 16px; font-size: 13.5px; }
-  .bt-lrow .n { color: var(--faint); font-weight: 600; }
-  .bt-lrow .v { font-weight: 700; }
-  .bt-lrow > span:nth-child(3) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bt-lbar { grid-column: 3 / 5; height: 3px; border-radius: 2px; background: var(--surface-3); margin-top: -3px; }
-  .bt-lbar > div { height: 100%; border-radius: 2px; background: var(--accent); }
-  .bt-select { appearance: none; background-color: var(--surface-2); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--r-sm); font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; max-width: 100%; padding: 0 38px 0 12px; cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 8l5 5 5-5' fill='none' stroke='%23d20515' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; }
-  .bt-ctl { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 0 16px 12px; }
+  /* Ranking */
+  .bt-rank { padding: var(--s2) 0 var(--s3); }
+  .bt-lrow { display: grid; grid-template-columns: 22px 24px minmax(0, 120px) 1fr 64px; gap: var(--s2); align-items: center; padding: 5px var(--s4); font-size: 13.5px; }
+  .bt-lrow .n { color: var(--faint); font-family: var(--mono); font-size: 12px; }
+  .bt-lrow .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .bt-lrow .v { text-align: right; font-size: 13px; }
+  .bt-lrow .bar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; position: relative; }
+  .bt-lrow .bar > div { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--primary); }
+  .bt-lrow .bar > div.neg { background: var(--accent); }
+  .bt-lrow .bar > i { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line-strong); }
+
+  /* Schusskarte */
+  .bt-select { appearance: none; background-color: var(--surface); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--r-sm); font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; max-width: 100%; padding: 0 38px 0 12px; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='%233b82f6' d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; }
+  .bt-ctl { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; padding: var(--s3) var(--s4); }
   .bt-ctl label { color: var(--muted); font-size: 13px; font-weight: 600; }
-  .bt-shot { position: relative; padding: 0 16px 6px; min-height: 220px; }
+  .bt-shot { position: relative; padding: 0 var(--s4) var(--s2); min-height: 220px; }
   .bt-shot svg { display: block; width: 100%; height: auto; border-radius: 10px; }
-  .bt-shotsum { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px 14px; padding: 8px 16px 4px; align-items: center; }
-  .bt-shotsum .h { text-align: right; font-weight: 700; } .bt-shotsum .a { font-weight: 700; }
-  .bt-shotsum .m { text-align: center; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-  .bt-shotkey { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 8px 16px 14px; color: var(--muted); font-size: 12px; }
+  .bt-shotsum { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px var(--s3); padding: var(--s2) var(--s4); align-items: center; }
+  .bt-shotsum .h { text-align: right; } .bt-shotsum .h, .bt-shotsum .a { font-family: var(--mono); font-weight: 700; }
+  .bt-shotsum .m { text-align: center; color: var(--faint); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+  .bt-shotkey { display: flex; flex-wrap: wrap; gap: 6px var(--s4); padding: var(--s2) var(--s4) var(--s3); color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); }
   .bt-shotkey span { display: inline-flex; align-items: center; gap: 6px; }
-  .bt-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; border: 1.5px solid var(--pitch); }
+  .bt-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
 
   /* Bilanz */
-  .bt-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)); gap: 14px; }
-  .bt-tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 14px 16px; display: grid; gap: 4px; }
-  .bt-tile .k { color: var(--muted); font-size: 12.5px; }
-  .bt-tile .big { font-family: var(--display); font-weight: 700; font-size: 36px; line-height: 1; }
-  .bt-tile .big small { font-size: 19px; color: var(--muted); margin-left: 1px; }
-  .bt-tile.accent { border-top: 3px solid var(--accent); }
-  .bt-tile.accent .big { color: var(--accent); }
-  .bt-chart { position: relative; padding: 0 16px 14px; min-height: 220px; }
+  .bt-chart { position: relative; padding: var(--s3) var(--s4); min-height: 220px; }
   .bt-chart svg { display: block; }
-  .bt-chart text, .bt-shot text { fill: var(--muted); font-size: 11px; font-family: var(--text); }
-  .bt-ok { color: var(--win); font-weight: 700; } .bt-no { color: var(--loss); font-weight: 700; }
-  .bt-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-3); color: var(--muted); }
+  .bt-chart text { fill: var(--muted); font-size: 11px; font-family: var(--mono); }
+  .bt-shot text { font-family: var(--text); font-weight: 600; }
+  .bt-ok { color: var(--win); font-weight: 700; font-family: var(--text); } .bt-no { color: var(--loss); font-weight: 700; font-family: var(--text); }
+  .bt-tag { font-family: var(--text); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-3); color: var(--muted); }
   .bt-tag.live { background: var(--accent-soft); color: var(--accent); }
 
-  .bt-tip { position: absolute; pointer-events: none; background: var(--fg); color: var(--surface); border-radius: 8px; padding: 5px 9px; font-size: 12px; white-space: nowrap; z-index: 5; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
-  .bt-facts { display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: 9px 16px; margin: 0; padding: 0 16px 16px; font-size: 13.5px; }
+  .bt-tip { position: absolute; pointer-events: none; background: var(--fg); color: var(--surface); border-radius: 6px; padding: 5px 9px; font-size: 12px; white-space: nowrap; z-index: 5; box-shadow: 0 6px 18px rgba(0,0,0,.22); }
+  .bt-facts { display: grid; grid-template-columns: minmax(120px, auto) 1fr; gap: var(--s2) var(--s4); margin: 0; padding: var(--s3) var(--s4) var(--s4); font-size: 13.5px; }
   .bt-facts dt { color: var(--muted); font-weight: 600; }
   .bt-facts dd { margin: 0; }
-  @media (max-width: 480px) { .bt-facts { grid-template-columns: 1fr; gap: 2px; } .bt-facts dd { margin-bottom: 10px; } }
+  @media (max-width: 480px) { .bt-facts { grid-template-columns: 1fr; gap: 2px; } .bt-facts dd { margin-bottom: var(--s3); } }
 
   /* xG-Eingabe */
-  details.bt-card > summary { list-style: none; cursor: pointer; align-items: center; }
+  details.bt-card > summary { list-style: none; cursor: pointer; }
   details.bt-card > summary::-webkit-details-marker { display: none; }
-  details.bt-card > summary .bt-hint { display: inline-flex; align-items: center; gap: 8px; }
-  .bt-xg-row { display: grid; grid-template-columns: minmax(0,1fr) 72px 10px 72px minmax(0,1fr); gap: 8px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--line); }
+  details.bt-card:not([open]) > summary { border-bottom: 0; }
+  details.bt-card > summary .bt-hint { display: inline-flex; align-items: center; gap: var(--s2); }
+  .bt-xg-row { display: grid; grid-template-columns: minmax(0,1fr) 72px 10px 72px minmax(0,1fr); gap: var(--s2); align-items: center; padding: var(--s2) var(--s4); border-top: 1px solid var(--line); }
   .bt-xg-row .h { text-align: right; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bt-xg-row .a { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bt-xg-row .sep { text-align: center; color: var(--faint); }
   .bt-xg-row .est { grid-column: 1 / -1; text-align: center; color: var(--faint); font-size: 12px; }
-  .bt-input { width: 100%; min-height: 44px; background: var(--surface-2); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--r-sm); font: inherit; font-size: 16px; font-weight: 700; text-align: center; transition: border-color .2s; }
-  .bt-input:focus { border-color: var(--accent); outline: none; }
+  .bt-input { width: 100%; min-height: 44px; background: var(--surface); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--r-sm); font-family: var(--mono); font-size: 16px; font-weight: 600; text-align: center; transition: border-color var(--dur-fast) var(--ease); }
+  .bt-input:focus { border-color: var(--primary-2); outline: none; box-shadow: 0 0 0 3px var(--primary-soft); }
   .bt-input.saved { border-color: var(--win); background: var(--win-soft); }
   .bt-input[aria-invalid="true"] { border-color: var(--loss); }
-  .bt-xg-actions { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 12px 16px 16px; border-top: 1px solid var(--line); }
-  .bt-btn { appearance: none; border: 0; border-radius: 10px; background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 700; font-size: 15px; min-height: 44px; padding: 0 22px; cursor: pointer; transition: filter .2s, transform .2s; }
+  .bt-xg-actions { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); align-items: center; padding: var(--s3) var(--s4) var(--s4); border-top: 1px solid var(--line); }
+  .bt-btn { appearance: none; border: 0; border-radius: var(--r-sm); background: var(--primary); color: var(--on-primary); font: inherit; font-weight: 700; font-size: 15px; min-height: 44px; padding: 0 var(--s5); cursor: pointer; transition: filter var(--dur-fast) var(--ease); }
   .bt-btn:hover { filter: brightness(1.08); }
-  .bt-btn:active { transform: translateY(1px); }
+  .bt-btn:active { filter: brightness(.94); }
   .bt-btn:disabled { opacity: .6; cursor: progress; }
   .bt-msg { margin: 0; font-size: 13px; }
   .bt-msg.ok { color: var(--win); } .bt-msg.err { color: var(--loss); }
-  .bt-dashlink { color: var(--accent); font-weight: 600; }
+  .bt-dashlink { color: var(--primary); font-weight: 600; }
 
-  @media (prefers-reduced-motion: reduce) { .bt * { transition: none !important; } }
+  /* Bewegung: kurzes gestaffeltes Einblenden (nur ohne „Bewegung reduzieren“) */
+  @media (prefers-reduced-motion: no-preference) {
+    .bt-panel:not([hidden]) > *, .bt-match { animation: bt-in var(--dur) var(--ease) both; }
+    .bt-panel > *:nth-child(2) { animation-delay: 40ms; } .bt-panel > *:nth-child(3) { animation-delay: 80ms; } .bt-panel > *:nth-child(4) { animation-delay: 120ms; }
+    @keyframes bt-in { from { transform: translateY(6px); opacity: .001; } to { transform: none; opacity: 1; } }
+  }
+  @media (prefers-reduced-motion: reduce) { .bt * { transition: none !important; animation: none !important; } }
   @media print { .bt-bar { position: static; } .bt-tabs { display: none; } .bt-panel { break-before: page; } }
 </style>
 
@@ -273,22 +295,20 @@
     <div class="bt-wrap">
       <div class="bt-brand" id="kopf">
         <div class="bt-mark">
-          <div class="bt-crestmark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.5 2.5-1.3 4h-4.4l-1.3-4z" fill="#ffffff" stroke="none"/><path d="M12 3v4.5M20.5 9.5 15.5 10M17.5 19l-3.3-5M6.5 19l3.3-5M3.5 9.5l5 .5"/></svg>
-          </div>
+          <div class="bt-logo"><svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm76.52,147.42H170.9l-9.26-12.76,12.63-36.78,15-4.89,26.24,20.13A87.38,87.38,0,0,1,204.52,171.42Zm-164-34.3L66.71,117l15,4.89,12.63,36.78L85.1,171.42H51.48A87.38,87.38,0,0,1,40.47,137.12Zm10-50.64,5.51,18.6L40.71,116.77A87.33,87.33,0,0,1,50.43,86.48ZM109,152,97.54,118.65,128,97.71l30.46,20.94L147,152Zm91.07-46.92,5.51-18.6a87.33,87.33,0,0,1,9.72,30.29Zm-6.2-35.38-9.51,32.08-15.07,4.89L136,83.79V68.21l29.09-20A88.58,88.58,0,0,1,193.86,69.7ZM146.07,41.87,128,54.29,109.93,41.87a88.24,88.24,0,0,1,36.14,0ZM90.91,48.21l29.09,20V83.79L86.72,106.67l-15.07-4.89L62.14,69.7A88.58,88.58,0,0,1,90.91,48.21ZM63.15,187.42H83.52l7.17,20.27A88.4,88.4,0,0,1,63.15,187.42ZM110,214.13,98.12,180.71,107.35,168h41.3l9.23,12.71-11.83,33.42a88,88,0,0,1-36.1,0Zm55.36-6.44,7.17-20.27h20.37A88.4,88.4,0,0,1,165.31,207.69Z"/></svg></div>
           <div>
             <h1 class="bt-title">Bundesliga-Tipp</h1>
-            <p class="bt-sub"><span data-draw="saison" data-source="modell" data-field="saison" data-row="0">—</span> · aktualisiert <span data-draw="berechnet" data-source="modell" data-field="berechnet" data-row="0">—</span></p>
+            <p class="bt-sub">Saison <span data-draw="saison" data-source="modell" data-field="saison" data-row="0">—</span> · aktualisiert <span data-draw="berechnet" data-source="modell" data-field="berechnet" data-row="0">—</span></p>
           </div>
         </div>
-        <div class="bt-md"><span class="v" data-draw="spieltag" data-source="modell" data-field="spieltag" data-row="0">—</span><span class="k">. Spieltag</span></div>
+        <div class="bt-md"><span class="k">Spieltag</span><span class="v" data-draw="spieltag" data-source="modell" data-field="spieltag" data-row="0">—</span></div>
       </div>
       <nav class="bt-tabs" role="tablist" aria-label="Bereiche">
-        <button class="bt-tab" role="tab" id="tab-spiele" aria-controls="spiele" aria-selected="true" data-tab="spiele"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Spiele</span></button>
-        <button class="bt-tab" role="tab" id="tab-tabelle" aria-controls="tabelle" aria-selected="false" data-tab="tabelle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span>Tabelle</span></button>
-        <button class="bt-tab" role="tab" id="tab-analyse" aria-controls="analyse" aria-selected="false" data-tab="analyse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Analyse</span></button>
-        <button class="bt-tab" role="tab" id="tab-bilanz" aria-controls="bilanz" aria-selected="false" data-tab="bilanz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg><span>Bilanz</span></button>
-        <button class="bt-tab" role="tab" id="tab-modell" aria-controls="modell" aria-selected="false" data-tab="modell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Modell</span></button>
+        <button class="bt-tab" role="tab" id="tab-spiele" aria-controls="spiele" aria-selected="true" data-tab="spiele"><svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z"/></svg><span>Spiele</span></button>
+        <button class="bt-tab" role="tab" id="tab-tabelle" aria-controls="tabelle" aria-selected="false" data-tab="tabelle"><svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H104a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM104,72H216a8,8,0,0,0,0-16H104a8,8,0,0,0,0,16ZM216,184H104a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM43.58,55.16,48,52.94V104a8,8,0,0,0,16,0V40a8,8,0,0,0-11.58-7.16l-16,8a8,8,0,0,0,7.16,14.32ZM79.77,156.72a23.73,23.73,0,0,0-9.6-15.95,24.86,24.86,0,0,0-34.11,4.7,23.63,23.63,0,0,0-3.57,6.46,8,8,0,1,0,15,5.47,7.84,7.84,0,0,1,1.18-2.13,8.76,8.76,0,0,1,12-1.59A7.91,7.91,0,0,1,63.93,159a7.64,7.64,0,0,1-1.57,5.78,1,1,0,0,0-.08.11L33.59,203.21A8,8,0,0,0,40,216H72a8,8,0,0,0,0-16H56l19.08-25.53A23.47,23.47,0,0,0,79.77,156.72Z"/></svg><span>Tabelle</span></button>
+        <button class="bt-tab" role="tab" id="tab-analyse" aria-controls="analyse" aria-selected="false" data-tab="analyse"><svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M232,208a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V48a8,8,0,0,1,16,0V200H224A8,8,0,0,1,232,208ZM132,160a12,12,0,1,0-12-12A12,12,0,0,0,132,160Zm-24-56A12,12,0,1,0,96,92,12,12,0,0,0,108,104ZM76,176a12,12,0,1,0-12-12A12,12,0,0,0,76,176Zm96-48a12,12,0,1,0-12-12A12,12,0,0,0,172,128Zm24-40a12,12,0,1,0-12-12A12,12,0,0,0,196,88Zm-20,76a12,12,0,1,0,12-12A12,12,0,0,0,176,164Z"/></svg><span>Analyse</span></button>
+        <button class="bt-tab" role="tab" id="tab-bilanz" aria-controls="bilanz" aria-selected="false" data-tab="bilanz"><svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M221.87,83.16A104.1,104.1,0,1,1,195.67,49l22.67-22.68a8,8,0,0,1,11.32,11.32l-96,96a8,8,0,0,1-11.32-11.32l27.72-27.72a40,40,0,1,0,17.87,31.09,8,8,0,1,1,16-.9,56,56,0,1,1-22.38-41.65L184.3,60.39a87.88,87.88,0,1,0,23.13,29.67,8,8,0,0,1,14.44-6.9Z"/></svg><span>Bilanz</span></button>
+        <button class="bt-tab" role="tab" id="tab-modell" aria-controls="modell" aria-selected="false" data-tab="modell"><svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M40,88H73a32,32,0,0,0,62,0h81a8,8,0,0,0,0-16H135a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16Zm64-24A16,16,0,1,1,88,80,16,16,0,0,1,104,64ZM216,168H199a32,32,0,0,0-62,0H40a8,8,0,0,0,0,16h97a32,32,0,0,0,62,0h17a8,8,0,0,0,0-16Zm-48,24a16,16,0,1,1,16-16A16,16,0,0,1,168,192Z"/></svg><span>Modell</span></button>
       </nav>
     </div>
   </header>
@@ -296,37 +316,58 @@
   <div class="bt-wrap">
     <!-- SPIELE -->
     <section class="bt-panel" id="spiele" role="tabpanel" aria-labelledby="tab-spiele">
-      <div class="bt-card bt-hero" id="ueberblick">
-        <div>
-          <span class="bt-eyebrow">Topfavorit</span>
-          <span class="big accent"><span data-draw="fav-p" data-source="ueberblick" data-field="fav_p" data-row="0">—</span><small>%</small></span>
-          <span class="sub"><b data-draw="fav-team" data-source="ueberblick" data-field="fav_team" data-row="0">—</b> gegen <span data-draw="fav-gegner" data-source="ueberblick" data-field="fav_gegner" data-row="0">—</span></span>
+      <div class="bt-kpis" id="ueberblick">
+        <div class="bt-kpi hl"><span class="k">Topfavorit</span><span class="v"><span data-draw="fav-p" data-source="ueberblick" data-field="fav_p" data-row="0">—</span><small>%</small></span><span class="s"><b data-draw="fav-team" data-source="ueberblick" data-field="fav_team" data-row="0">—</b> gegen <span data-draw="fav-gegner" data-source="ueberblick" data-field="fav_gegner" data-row="0">—</span></span></div>
+        <div class="bt-kpi"><span class="k">Engstes Duell</span><span class="v"><span data-draw="eng-p" data-source="ueberblick" data-field="eng_p" data-row="0">—</span><small>%</small></span><span class="s" data-draw="eng-spiel" data-source="ueberblick" data-field="eng_spiel" data-row="0">—</span></div>
+        <div class="bt-kpi"><span class="k">Tendenz richtig</span><span class="v"><span data-draw="hero-bt" data-source="modell" data-field="backtest_tendenz" data-row="0">—</span><small>%</small></span><span class="s">im Backtest</span></div>
+        <div class="bt-kpi"><span class="k">Tipp exakt</span><span class="v"><span data-draw="hero-ex" data-source="bilanz" data-field="tipp_exakt" data-where="gruppe=gesamt">—</span><small>%</small></span><span class="s">diese Saison</span></div>
+      </div>
+      <div class="bt-grid two">
+        <div class="bt-grid">
+        <div class="bt-card" id="spielliste">
+          <div class="bt-card-h"><h2>Prognosen</h2><span class="bt-hint">Antippen für Details</span></div>
+          <div data-draw="spiele" data-source="prognosen staerken" data-fetchpriority="high"></div>
         </div>
-        <div>
-          <span class="bt-eyebrow">Engstes Duell</span>
-          <span class="big"><span data-draw="eng-p" data-source="ueberblick" data-field="eng_p" data-row="0">—</span><small>%</small></span>
-          <span class="sub" data-draw="eng-spiel" data-source="ueberblick" data-field="eng_spiel" data-row="0">—</span>
+        <div class="bt-card" id="letzter-st">
+          <div class="bt-card-h"><h2>Letzter Spieltag: Tipp gegen Ergebnis</h2><button class="bt-linkbtn" type="button" data-goto="bilanz">Ganze Bilanz</button></div>
+          <div class="bt-tw">
+            <table class="bt-table" data-source="protokoll" data-row-key="match_id">
+              <thead><tr><th data-field="spiel" class="l">Spiel</th><th data-field="tipp">Tipp</th><th data-field="ergebnis">Erg.</th><th class="l">Tendenz</th></tr></thead>
+              <tbody data-draw="letzter-st"></tbody>
+            </table>
+          </div>
         </div>
-        <div>
-          <span class="bt-eyebrow">Trefferquote</span>
-          <span class="big"><span data-draw="hero-bt" data-source="modell" data-field="backtest_tendenz" data-row="0">—</span><small>%</small></span>
-          <span class="sub">Tendenz richtig im Backtest</span>
+        </div>
+        <div class="bt-card" id="kurztabelle">
+          <div class="bt-card-h"><h2>Tabelle</h2><button class="bt-linkbtn" type="button" data-goto="tabelle">Ganze Tabelle</button></div>
+          <div class="bt-tw">
+            <table class="bt-table" data-source="staerken" data-row-key="team">
+              <thead><tr><th data-field="platz" class="l">#</th><th data-field="team" class="l">Team</th><th data-field="sp">Sp</th><th data-field="tordifferenz">Diff</th><th data-field="punkte">Pkt</th></tr></thead>
+              <tbody data-draw="liga-mini"></tbody>
+            </table>
+          </div>
         </div>
       </div>
-      <div class="bt-card" id="spielliste">
-        <div class="bt-card-h"><h2>Prognosen</h2><span class="bt-hint">Antippen für Details</span></div>
-        <div data-draw="spiele" data-source="prognosen staerken" data-fetchpriority="high"></div>
-      </div>
-      <p class="bt-foot">In der Mitte steht der Tipp: das Ergebnis, das innerhalb des wahrscheinlichsten Ausgangs am besten zu den erwarteten Toren passt. Balken: Heimsieg · Unentschieden · Auswärtssieg.</p>
+      <p class="bt-foot">In der Mitte steht der Tipp: das Ergebnis, das innerhalb des wahrscheinlichsten Ausgangs am besten zu den erwarteten Toren passt. Balken und Werte: 1 = Heimsieg (blau) · X = Unentschieden · 2 = Auswärtssieg (orange).</p>
     </section>
 
     <!-- TABELLE -->
     <section class="bt-panel" id="tabelle" role="tabpanel" aria-labelledby="tab-tabelle" hidden>
       <div class="bt-card">
-        <div class="bt-card-h"><h2>Tabelle</h2><span class="bt-hint">xG±: letzte 6 Spiele</span></div>
+        <div class="bt-card-h"><h2>Tabelle</h2><span class="bt-hint">Spaltenkopf antippen zum Sortieren</span></div>
         <div class="bt-tw">
-          <table class="bt-table" data-source="staerken" data-row-key="team">
-            <thead><tr><th data-field="platz" class="l">#</th><th data-field="team" class="l">Team</th><th data-field="sp">Sp</th><th data-field="s">S</th><th data-field="u">U</th><th data-field="n">N</th><th data-field="tore">Tore</th><th data-field="tordifferenz">Diff</th><th data-field="punkte">Pkt</th><th data-field="letzte5" class="l">Form</th><th data-field="xg_diff">xG±</th><th data-field="rang">Modell</th></tr></thead>
+          <table class="bt-table" data-source="staerken" data-row-key="team" id="liga-tabelle">
+            <thead><tr>
+              <th data-field="platz" class="l" data-sort="platz" aria-sort="ascending"><button class="bt-sortbtn" type="button">#<svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M117.66,170.34a8,8,0,0,1,0,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L72,188.69V48a8,8,0,0,1,16,0V188.69l18.34-18.35A8,8,0,0,1,117.66,170.34Zm96-96-32-32a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,11.32,11.32L168,67.31V208a8,8,0,0,0,16,0V67.31l18.34,18.35a8,8,0,0,0,11.32-11.32Z"/></svg></button></th>
+              <th data-field="team" class="l">Team</th>
+              <th data-field="sp">Sp</th><th data-field="s">S</th><th data-field="u">U</th><th data-field="n">N</th>
+              <th data-field="tore">Tore</th>
+              <th data-field="tordifferenz" data-sort="tordifferenz"><button class="bt-sortbtn" type="button">Diff<svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M117.66,170.34a8,8,0,0,1,0,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L72,188.69V48a8,8,0,0,1,16,0V188.69l18.34-18.35A8,8,0,0,1,117.66,170.34Zm96-96-32-32a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,11.32,11.32L168,67.31V208a8,8,0,0,0,16,0V67.31l18.34,18.35a8,8,0,0,0,11.32-11.32Z"/></svg></button></th>
+              <th data-field="punkte" data-sort="punkte"><button class="bt-sortbtn" type="button">Pkt<svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M117.66,170.34a8,8,0,0,1,0,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L72,188.69V48a8,8,0,0,1,16,0V188.69l18.34-18.35A8,8,0,0,1,117.66,170.34Zm96-96-32-32a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,11.32,11.32L168,67.31V208a8,8,0,0,0,16,0V67.31l18.34,18.35a8,8,0,0,0,11.32-11.32Z"/></svg></button></th>
+              <th data-field="letzte5" class="l">Form</th>
+              <th data-field="xg_diff" data-sort="xg_diff"><button class="bt-sortbtn" type="button">xG±<svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M117.66,170.34a8,8,0,0,1,0,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L72,188.69V48a8,8,0,0,1,16,0V188.69l18.34-18.35A8,8,0,0,1,117.66,170.34Zm96-96-32-32a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,11.32,11.32L168,67.31V208a8,8,0,0,0,16,0V67.31l18.34,18.35a8,8,0,0,0,11.32-11.32Z"/></svg></button></th>
+              <th data-field="rang" data-sort="rang"><button class="bt-sortbtn" type="button">Modell<svg class="bt-ico" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M117.66,170.34a8,8,0,0,1,0,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L72,188.69V48a8,8,0,0,1,16,0V188.69l18.34-18.35A8,8,0,0,1,117.66,170.34Zm96-96-32-32a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,11.32,11.32L168,67.31V208a8,8,0,0,0,16,0V67.31l18.34,18.35a8,8,0,0,0,11.32-11.32Z"/></svg></button></th>
+            </tr></thead>
             <tbody data-draw="liga"></tbody>
           </table>
         </div>
@@ -335,36 +376,41 @@
           <span><i style="background: var(--zone-el)"></i>Europa League</span>
           <span><i style="background: var(--zone-ecl)"></i>Conference League</span>
           <span><i style="background: var(--zone-rel)"></i>Relegation / Abstieg</span>
-          <span>Modell: Rang nach Teamstärke</span>
+          <span>S/U/N = Sieg, Unentschieden, Niederlage · Modell = Rang nach Teamstärke</span>
         </div>
       </div>
     </section>
 
     <!-- ANALYSE -->
     <section class="bt-panel" id="analyse" role="tabpanel" aria-labelledby="tab-analyse" hidden>
-      <div class="bt-card" id="schusskarte">
-        <div class="bt-card-h"><h2>Schusskarte</h2><span class="bt-hint">Kreisgröße = xG · gefüllt = Tor</span></div>
-        <div class="bt-ctl">
-          <label for="shot-spiel">Spiel</label>
-          <select class="bt-select" id="shot-spiel" data-draw="shot-spiel" data-source="ereignisse"></select>
+      <div class="bt-grid two">
+        <div class="bt-card" id="schusskarte">
+          <div class="bt-card-h"><h2>Schusskarte</h2><span class="bt-hint">Kreisgröße = xG · gefüllt = Tor</span></div>
+          <div class="bt-ctl">
+            <label for="shot-spiel">Spiel</label>
+            <select class="bt-select" id="shot-spiel" data-draw="shot-spiel" data-source="ereignisse"></select>
+          </div>
+          <div class="bt-shot" data-draw="shotmap" data-source="ereignisse statistik"></div>
+          <div class="bt-shotkey">
+            <span><i class="bt-dot" style="background: var(--pitch-home)"></i>Heim</span>
+            <span><i class="bt-dot" style="background: var(--pitch-away)"></i>Gast</span>
+            <span>xG aus Entfernung, Winkel und Schussart; Elfmeter fest</span>
+          </div>
         </div>
-        <div class="bt-shot" data-draw="shotmap" data-source="ereignisse statistik"></div>
-        <div class="bt-shotkey">
-          <span><i class="bt-dot" style="background: var(--pitch-home)"></i>Heim</span>
-          <span><i class="bt-dot" style="background: var(--pitch-away)"></i>Gast</span>
-          <span>xG aus Entfernung, Winkel und Schussart; Elfmeter fest</span>
+        <div class="bt-card" id="ranking">
+          <div class="bt-card-h"><h2>Team-Ranking</h2><span class="bt-hint">letzte 6 Spiele</span></div>
+          <div class="bt-chips" role="group" aria-label="Kennzahl wählen">
+            <button class="bt-fchip" type="button" data-metric="xg_diff" aria-pressed="true">xG±</button>
+            <button class="bt-fchip" type="button" data-metric="xt_diff" aria-pressed="false">Gefahr (xT)</button>
+            <button class="bt-fchip" type="button" data-metric="feldkontrolle" aria-pressed="false">Feldkontrolle</button>
+            <button class="bt-fchip" type="button" data-metric="form" aria-pressed="false">Form</button>
+            <button class="bt-fchip" type="button" data-metric="ballbesitz" aria-pressed="false">Ballbesitz</button>
+            <button class="bt-fchip" type="button" data-metric="ppda" aria-pressed="false">Pressing</button>
+          </div>
+          <div class="bt-rank" data-draw="ranking" data-source="staerken"></div>
+          <p class="bt-note" data-draw="ranking-hint">—</p>
         </div>
       </div>
-
-      <div class="bt-leaders">
-        <div class="bt-card" id="top-xg"><div class="bt-card-h"><h3>xG-Differenz</h3><span class="bt-hint">pro Spiel</span></div><div class="bt-lists" data-draw="top-xg" data-source="staerken"></div></div>
-        <div class="bt-card" id="top-xt"><div class="bt-card-h"><h3>Gefahr (xT)</h3><span class="bt-hint">Differenz pro Spiel</span></div><div class="bt-lists" data-draw="top-xt" data-source="staerken"></div></div>
-        <div class="bt-card" id="top-fk"><div class="bt-card-h"><h3>Feldkontrolle</h3><span class="bt-hint">in %</span></div><div class="bt-lists" data-draw="top-fk" data-source="staerken"></div></div>
-        <div class="bt-card" id="top-form"><div class="bt-card-h"><h3>Form-Index</h3><span class="bt-hint">0 = Durchschnitt</span></div><div class="bt-lists" data-draw="top-form" data-source="staerken"></div></div>
-        <div class="bt-card" id="top-ball"><div class="bt-card-h"><h3>Ballbesitz</h3><span class="bt-hint">in %</span></div><div class="bt-lists" data-draw="top-ball" data-source="staerken"></div></div>
-        <div class="bt-card" id="top-ppda"><div class="bt-card-h"><h3>Pressing (PPDA)</h3><span class="bt-hint">kleiner = aggressiver</span></div><div class="bt-lists" data-draw="top-ppda" data-source="staerken"></div></div>
-      </div>
-      <p class="bt-foot">Gefahr (xT) und Feldkontrolle sind Annäherungen an Expected Threat und Pitch Control: Echte Werte bräuchten jeden Pass bzw. die Positionen aller Spieler. Hier zählt jede Aktion mit Position (Freistoß, Ecke, Abseits) mit dem gelernten Wert ihrer Zone, und die Feldkontrolle verbindet die mittlere Ballposition mit dem Ballbesitz.</p>
 
       <div class="bt-card">
         <div class="bt-card-h"><h2>Letzter Spieltag</h2><span class="bt-hint">Daten: ESPN</span></div>
@@ -375,6 +421,7 @@
           </table>
         </div>
       </div>
+      <p class="bt-foot">Gefahr (xT) und Feldkontrolle sind Annäherungen an Expected Threat und Pitch Control: Echte Werte bräuchten jeden Pass bzw. die Positionen aller Spieler. Hier zählt jede Aktion mit Position (Freistoß, Ecke, Abseits) mit dem gelernten Wert ihrer Zone; die Feldkontrolle verbindet die mittlere Ballposition mit dem Ballbesitz.</p>
 
       <div class="bt-card" id="xg-eingabe-box">
         <div class="bt-card-h"><h2>FotMob-xG eintragen</h2><span class="bt-hint"><span data-draw="fm-n" data-source="modell" data-field="fotmob_spiele" data-row="0">—</span> Spiele · Gewicht <span data-draw="fm-w" data-source="modell" data-field="fotmob_gewicht" data-row="0">—</span> %</span></div>
@@ -384,51 +431,63 @@
 
     <!-- BILANZ -->
     <section class="bt-panel" id="bilanz" role="tabpanel" aria-labelledby="tab-bilanz" hidden>
-      <div class="bt-tiles">
-        <div class="bt-tile accent" id="tile-tendenz"><span class="k">Tendenz richtig</span><span class="big"><span data-draw="q-tendenz" data-source="bilanz" data-field="tendenz" data-where="gruppe=gesamt">—</span><small>%</small></span><span class="k">von <span data-draw="q-spiele" data-source="bilanz" data-field="spiele" data-where="gruppe=gesamt">—</span> Spielen · Raten: 33 %</span></div>
-        <div class="bt-tile" id="tile-tipp"><span class="k">Tipp exakt</span><span class="big"><span data-draw="q-tipp" data-source="bilanz" data-field="tipp_exakt" data-where="gruppe=gesamt">—</span><small>%</small></span><span class="k">genaues Endergebnis</span></div>
-        <div class="bt-tile" id="tile-live"><span class="k">Live getippt</span><span class="big" data-draw="q-live" data-source="bilanz" data-field="spiele" data-where="gruppe=live">—</span><span class="k">Tendenz richtig: <span data-draw="q-live-t" data-source="bilanz" data-field="tendenz" data-where="gruppe=live">—</span> %</span></div>
+      <div class="bt-kpis">
+        <div class="bt-kpi hl"><span class="k">Tendenz richtig</span><span class="v"><span data-draw="q-tendenz" data-source="bilanz" data-field="tendenz" data-where="gruppe=gesamt">—</span><small>%</small></span><span class="s">von <span data-draw="q-spiele" data-source="bilanz" data-field="spiele" data-where="gruppe=gesamt">—</span> Spielen · Raten 33 %</span></div>
+        <div class="bt-kpi"><span class="k">Tipp exakt</span><span class="v"><span data-draw="q-tipp" data-source="bilanz" data-field="tipp_exakt" data-where="gruppe=gesamt">—</span><small>%</small></span><span class="s">genaues Endergebnis</span></div>
+        <div class="bt-kpi"><span class="k">Live getippt</span><span class="v" data-draw="q-live" data-source="bilanz" data-field="spiele" data-where="gruppe=live">—</span><span class="s">Tendenz: <span data-draw="q-live-t" data-source="bilanz" data-field="tendenz" data-where="gruppe=live">—</span> %</span></div>
+        <div class="bt-kpi"><span class="k">Backtest</span><span class="v"><span data-draw="q-bt" data-source="modell" data-field="backtest_tendenz" data-row="0">—</span><small>%</small></span><span class="s">letzte 12 Spieltage</span></div>
       </div>
-      <div class="bt-card" id="je-spieltag">
-        <div class="bt-card-h"><h2>Treffer je Spieltag</h2><span class="bt-hint">Tendenz richtig in %</span></div>
-        <div class="bt-chart" data-draw="chart-spieltag" data-source="je_spieltag"></div>
-      </div>
-      <div class="bt-card" id="letzte-spiele">
-        <div class="bt-card-h"><h2>Letzte Tipps</h2><span class="bt-hint">Rückblick: nur mit Daten vor Anpfiff berechnet</span></div>
-        <div class="bt-tw">
-          <table class="bt-table" data-source="protokoll" data-row-key="match_id">
-            <thead><tr><th data-field="spieltag">ST</th><th data-field="spiel" class="l">Spiel</th><th data-field="tipp">Tipp</th><th data-field="ergebnis">Ergebnis</th><th class="l">Tendenz</th><th data-field="art" class="l">Art</th></tr></thead>
-            <tbody data-draw="tabelle-letzte"></tbody>
-          </table>
+      <div class="bt-grid two">
+        <div class="bt-card" id="letzte-spiele">
+          <div class="bt-card-h"><h2>Letzte Tipps</h2><span class="bt-hint">Rückblick: nur mit Daten vor Anpfiff</span></div>
+          <div class="bt-chips" role="group" aria-label="Tipps filtern">
+            <button class="bt-fchip" type="button" data-filter="alle" aria-pressed="true">Alle</button>
+            <button class="bt-fchip" type="button" data-filter="richtig" aria-pressed="false">Richtig</button>
+            <button class="bt-fchip" type="button" data-filter="falsch" aria-pressed="false">Falsch</button>
+            <button class="bt-fchip" type="button" data-filter="exakt" aria-pressed="false">Exakt</button>
+            <button class="bt-fchip" type="button" data-filter="live" aria-pressed="false">Live</button>
+          </div>
+          <div class="bt-tw">
+            <table class="bt-table" data-source="protokoll" data-row-key="match_id">
+              <thead><tr><th data-field="spieltag">ST</th><th data-field="spiel" class="l">Spiel</th><th data-field="tipp">Tipp</th><th data-field="ergebnis">Erg.</th><th class="l">Tendenz</th><th data-field="art" class="l">Art</th></tr></thead>
+              <tbody data-draw="tabelle-letzte"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="bt-card" id="je-spieltag">
+          <div class="bt-card-h"><h2>Treffer je Spieltag</h2><span class="bt-hint">Tendenz richtig in %</span></div>
+          <div class="bt-chart" data-draw="chart-spieltag" data-source="je_spieltag"></div>
         </div>
       </div>
     </section>
 
     <!-- MODELL -->
     <section class="bt-panel" id="modell" role="tabpanel" aria-labelledby="tab-modell" hidden>
-      <div class="bt-card" id="gewichtung">
-        <div class="bt-card-h"><h2>So rechnet das Modell</h2></div>
-        <dl class="bt-facts">
-          <dt>Teamstärke</dt><dd>aus Toren und xG gelernt, xG zählt zu <b data-draw="m-wxg" data-source="modell" data-field="xg_gewicht" data-row="0">—</b> %</dd>
-          <dt>xG</dt><dd>eigenes Modell aus <span data-draw="m-shots" data-source="modell" data-field="raum_schuesse" data-row="0">—</span> Schüssen mit Position (<span data-draw="m-raum" data-source="modell" data-field="raum_spiele" data-row="0">—</span> Spiele): Entfernung, Winkel, Kopfball, Freistoß, Flanke, Steilpass, Konter. Elfmeter <span data-draw="m-pen" data-source="modell" data-field="elfmeter_xg" data-row="0">—</span>. Ältere Spiele ohne genaue Positionen: Schätzung aus Schusszahlen.</dd>
-          <dt>FotMob-xG</dt><dd><span data-draw="m-fmn" data-source="modell" data-field="fotmob_spiele" data-row="0">—</span> Spiele eingetragen, zählen zu <b data-draw="m-fmw" data-source="modell" data-field="fotmob_gewicht" data-row="0">—</b> % (steigt von 20 auf 70 %)</dd>
-          <dt>Form-Index</dt><dd data-draw="m-gew" data-source="modell" data-field="gewichte" data-row="0">—</dd>
-          <dt>Wirkung der Form</dt><dd>1 Punkt Unterschied verschiebt die erwarteten Tore um <b data-draw="m-fe" data-source="modell" data-field="form_effekt_pct" data-row="0">—</b> %</dd>
-          <dt>Ergebnis-Häufigkeiten</dt><dd>Die Korrektur für knappe Ergebnisse (0:0, 1:0, 1:1) zählt nur zu <b data-draw="m-rho" data-source="modell" data-field="rho_gewicht" data-row="0">—</b> %, und der Tipp richtet sich nach den erwarteten Toren statt nach dem häufigsten Ergebnis.</dd>
-          <dt>Heimvorteil</dt><dd>Liga ×<span data-draw="m-heim" data-source="modell" data-field="heimvorteil" data-row="0">—</span>, je Team aus den eigenen Heimspielen angepasst</dd>
-          <dt>Training</dt><dd><span data-draw="m-spiele" data-source="modell" data-field="trainiert_spiele" data-row="0">—</span> Spiele, Halbwertszeit <span data-draw="m-hwz" data-source="modell" data-field="halbwertszeit_tage" data-row="0">—</span> Tage</dd>
-          <dt>Backtest</dt><dd><span data-draw="m-bts" data-source="modell" data-field="backtest_spiele" data-row="0">—</span> Spiele, Tendenz <b data-draw="m-btt" data-source="modell" data-field="backtest_tendenz" data-row="0">—</b> % richtig</dd>
-        </dl>
-      </div>
-      <div class="bt-card" id="staerken">
-        <div class="bt-card-h"><h2>Teamstärken</h2><span class="bt-hint">1,00 = Durchschnitt</span></div>
-        <div class="bt-tw">
-          <table class="bt-table" data-source="staerken" data-row-key="team">
-            <thead><tr><th data-field="rang" class="l">#</th><th data-field="team" class="l">Team</th><th data-field="angriff">Angriff</th><th data-field="abwehr">Abwehr</th><th data-field="heimfaktor">Heim</th><th data-field="form">Form</th></tr></thead>
-            <tbody data-draw="tabelle-staerken"></tbody>
-          </table>
+      <div class="bt-grid two">
+        <div class="bt-card" id="gewichtung">
+          <div class="bt-card-h"><h2>So rechnet das Modell</h2></div>
+          <dl class="bt-facts">
+            <dt>Teamstärke</dt><dd>aus Toren und xG gelernt, xG zählt zu <b class="num" data-draw="m-wxg" data-source="modell" data-field="xg_gewicht" data-row="0">—</b> %</dd>
+            <dt>xG</dt><dd>eigenes Modell aus <span class="num" data-draw="m-shots" data-source="modell" data-field="raum_schuesse" data-row="0">—</span> Schüssen mit Position (<span class="num" data-draw="m-raum" data-source="modell" data-field="raum_spiele" data-row="0">—</span> Spiele): Entfernung, Winkel, Kopfball, Freistoß, Flanke, Steilpass, Konter. Elfmeter <span class="num" data-draw="m-pen" data-source="modell" data-field="elfmeter_xg" data-row="0">—</span>. Ältere Spiele: Schätzung aus Schusszahlen.</dd>
+            <dt>FotMob-xG</dt><dd><span class="num" data-draw="m-fmn" data-source="modell" data-field="fotmob_spiele" data-row="0">—</span> Spiele eingetragen, zählen zu <b class="num" data-draw="m-fmw" data-source="modell" data-field="fotmob_gewicht" data-row="0">—</b> % (steigt von 20 auf 70 %)</dd>
+            <dt>Form-Index</dt><dd data-draw="m-gew" data-source="modell" data-field="gewichte" data-row="0">—</dd>
+            <dt>Wirkung der Form</dt><dd>1 Punkt Unterschied verschiebt die erwarteten Tore um <b class="num" data-draw="m-fe" data-source="modell" data-field="form_effekt_pct" data-row="0">—</b> %</dd>
+            <dt>Ergebnis-Häufigkeiten</dt><dd>Korrektur für knappe Ergebnisse (0:0, 1:0, 1:1) nur zu <b class="num" data-draw="m-rho" data-source="modell" data-field="rho_gewicht" data-row="0">—</b> %; der Tipp richtet sich nach den erwarteten Toren.</dd>
+            <dt>Heimvorteil</dt><dd>Liga ×<span class="num" data-draw="m-heim" data-source="modell" data-field="heimvorteil" data-row="0">—</span>, je Team aus den eigenen Heimspielen angepasst</dd>
+            <dt>Training</dt><dd><span class="num" data-draw="m-spiele" data-source="modell" data-field="trainiert_spiele" data-row="0">—</span> Spiele, Halbwertszeit <span class="num" data-draw="m-hwz" data-source="modell" data-field="halbwertszeit_tage" data-row="0">—</span> Tage</dd>
+            <dt>Backtest</dt><dd><span class="num" data-draw="m-bts" data-source="modell" data-field="backtest_spiele" data-row="0">—</span> Spiele, Tendenz <b class="num" data-draw="m-btt" data-source="modell" data-field="backtest_tendenz" data-row="0">—</b> % richtig</dd>
+          </dl>
         </div>
-        <p class="bt-note">Angriff: Faktor für eigene Tore (größer ist besser). Abwehr: Faktor für Gegentore (kleiner ist besser).</p>
+        <div class="bt-card" id="staerken">
+          <div class="bt-card-h"><h2>Teamstärken</h2><span class="bt-hint">1,00 = Durchschnitt</span></div>
+          <div class="bt-tw">
+            <table class="bt-table" data-source="staerken" data-row-key="team">
+              <thead><tr><th data-field="rang" class="l">#</th><th data-field="team" class="l">Team</th><th data-field="angriff">Angriff</th><th data-field="abwehr">Abwehr</th><th data-field="heimfaktor">Heim</th><th data-field="form">Form</th></tr></thead>
+              <tbody data-draw="tabelle-staerken"></tbody>
+            </table>
+          </div>
+          <p class="bt-note">Angriff: Faktor für eigene Tore (größer ist besser). Abwehr: Faktor für Gegentore (kleiner ist besser).</p>
+        </div>
       </div>
       <p class="bt-foot">Daten: OpenLigaDB (Ergebnisse) und ESPN (Statistik und Spielereignisse mit Position). Dixon-Coles-Poisson-Modell, täglich gegen 23:40 Uhr neu berechnet.</p>
     </section>
@@ -561,6 +620,40 @@
       for (const t of tabs) { const p = document.getElementById(t.dataset.tab); if (p) p.hidden = false; }
     });
     window.addEventListener('afterprint', () => { if (before) show(before); });
+    // Sprung-Links (z. B. „Ganze Tabelle“)
+    document.querySelectorAll('.bt [data-goto]').forEach((b) => b.addEventListener('click', () => {
+      const t = tabs.find((x) => x.dataset.tab === b.dataset.goto);
+      if (t) { t.click(); t.focus(); }
+    }));
+  })();
+
+  // Zustand von Filter, Kennzahl und Sortierung (nur für diese Ansicht)
+  window.btUi = window.btUi || {metric: 'xg_diff', filter: 'alle', sortKey: 'platz', sortDir: 'asc'};
+  (() => {
+    const U = window.btUi;
+    const press = (sel, attr, val) => document.querySelectorAll(sel).forEach((b) => b.setAttribute('aria-pressed', b.dataset[attr] === val ? 'true' : 'false'));
+    document.querySelectorAll('.bt [data-metric]').forEach((b) => b.addEventListener('click', () => {
+      U.metric = b.dataset.metric; press('.bt [data-metric]', 'metric', U.metric); dash.draw('ranking'); dash.draw('ranking-hint');
+    }));
+    document.querySelectorAll('.bt [data-filter]').forEach((b) => b.addEventListener('click', () => {
+      U.filter = b.dataset.filter; press('.bt [data-filter]', 'filter', U.filter); dash.draw('tabelle-letzte');
+    }));
+    const ths = [...document.querySelectorAll('#liga-tabelle th[data-sort]')];
+    const mark = () => ths.forEach((th) => {
+      if (th.dataset.sort === U.sortKey) th.setAttribute('aria-sort', U.sortDir === 'asc' ? 'ascending' : 'descending');
+      else th.removeAttribute('aria-sort');
+    });
+    ths.forEach((th) => {
+      const btn = th.querySelector('button');
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const k = th.dataset.sort;
+        if (U.sortKey === k) U.sortDir = U.sortDir === 'asc' ? 'desc' : 'asc';
+        else { U.sortKey = k; U.sortDir = (k === 'platz' || k === 'rang') ? 'asc' : 'desc'; }
+        mark(); dash.draw('liga');
+      });
+    });
+    mark();
   })();
 
   const B = window.bt;
@@ -577,6 +670,8 @@
   B.text('eng-p', 'ueberblick', 'eng_p', first, pct1);
   B.text('eng-spiel', 'ueberblick', 'eng_spiel', first);
   B.text('hero-bt', 'modell', 'backtest_tendenz', first, pct1);
+  B.text('hero-ex', 'bilanz', 'tipp_exakt', grp('gesamt'), pct1);
+  B.text('q-bt', 'modell', 'backtest_tendenz', first, pct1);
   B.text('q-tendenz', 'bilanz', 'tendenz', grp('gesamt'), pct1);
   B.text('q-spiele', 'bilanz', 'spiele', grp('gesamt'));
   B.text('q-tipp', 'bilanz', 'tipp_exakt', grp('gesamt'), pct1);
@@ -630,8 +725,8 @@
       ta.append(B.crest(r.gast), B.mark(B.el('span', null, r.gast), 'prognosen', 'gast', w));
       row.append(th, B.mark(B.el('span', 'bt-pill', r.tipp), 'prognosen', 'tipp', w), ta);
       const chev = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      chev.setAttribute('viewBox', '0 0 20 20'); chev.setAttribute('class', 'bt-chev'); chev.setAttribute('aria-hidden', 'true');
-      chev.innerHTML = '<path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      chev.setAttribute('viewBox', '0 0 256 256'); chev.setAttribute('class', 'bt-chev'); chev.setAttribute('fill', 'currentColor'); chev.setAttribute('aria-hidden', 'true');
+      chev.innerHTML = '<path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/>';
       row.append(chev);
       const prob = B.el('div', 'bt-prob');
       const pwrap = B.el('div');
@@ -709,7 +804,10 @@
     if (d.status === 'error') { B.errorRow(el, 12, 'Die Tabelle konnte nicht geladen werden.'); return; }
     if (d.status !== 'ok') return;
     const zone = (p) => p <= 4 ? 'var(--zone-cl)' : p === 5 ? 'var(--zone-el)' : p === 6 ? 'var(--zone-ecl)' : p >= 16 ? 'var(--zone-rel)' : null;
-    for (const r of [...d.data].sort((a, b) => Number(a.platz) - Number(b.platz))) {
+    const U = window.btUi || {sortKey: 'platz', sortDir: 'asc'};
+    const dir = U.sortDir === 'asc' ? 1 : -1;
+    const sorted = [...d.data].sort((a, b) => (Number(a[U.sortKey]) - Number(b[U.sortKey])) * dir || Number(a.platz) - Number(b.platz));
+    for (const r of sorted) {
       const tr = B.el('tr');
       tr.dataset.key = r.team;
       const pos = B.el('td', 'pos l', String(r.platz ?? '–'));
@@ -731,36 +829,99 @@
     }
   });
 
-  // Bestenlisten
-  const leader = (name, field, opts) => dash.draw(name, (el) => {
+  // Team-Ranking mit Kennzahl-Auswahl
+  window.btMetrics = {
+    xg_diff: {fmt: (v) => window.bt.sgn(v), center: 0, hint: 'xG-Differenz: erwartete Tore minus erwartete Gegentore pro Spiel, Schnitt der letzten 6 Spiele.'},
+    xt_diff: {fmt: (v) => window.bt.sgn(v, 3), center: 0, hint: 'Gefahr (xT): Annäherung an Expected Threat. Wert der Ballbesitz-Aktionen nach Feldzone, eigene minus gegnerische.'},
+    feldkontrolle: {fmt: (v) => window.bt.nf1.format(v) + ' %', center: 50, hint: 'Feldkontrolle: Annäherung an Pitch Control aus mittlerer Ballposition und Ballbesitz; 50 % ist ausgeglichen.'},
+    form: {fmt: (v) => window.bt.sgn(v), center: 0, hint: 'Form-Index aus xG, Schüssen, xT, Feldkontrolle, Ballbesitz, PPDA und Tabellenplatz; 0 ist Durchschnitt.'},
+    ballbesitz: {fmt: (v) => window.bt.nf1.format(v) + ' %', center: 50, hint: 'Ballbesitz: Schnitt der letzten 6 Spiele.'},
+    ppda: {fmt: (v) => window.bt.nf1.format(v), center: null, asc: true, hint: 'Pressing (PPDA): gegnerische Pässe je eigener Defensivaktion, angenähert. Kleiner bedeutet aggressiveres Pressing.'},
+  };
+  dash.draw('ranking-hint', (el) => {
+    const m = window.btMetrics[(window.btUi || {}).metric || 'xg_diff'];
+    el.textContent = m ? m.hint : '';
+  });
+  dash.draw('ranking', (el) => {
     const B = window.bt;
     const d = dash.data('staerken');
+    const key = (window.btUi || {}).metric || 'xg_diff';
+    const M = window.btMetrics[key];
     el.replaceChildren();
-    if (d.status === 'error') { el.append(B.el('p', 'bt-empty', 'Konnte nicht geladen werden.')); return; }
+    if (d.status === 'error') { el.append(B.el('p', 'bt-empty', 'Das Ranking konnte nicht geladen werden.')); return; }
     if (d.status !== 'ok') { el.classList.toggle('dash-skeleton', d.status === 'loading'); return; }
     el.classList.remove('dash-skeleton');
-    const have = d.data.filter((r) => r[field] != null && r[field] !== '');
-    if (!have.length) { el.append(B.el('p', 'bt-empty', 'Noch keine Daten.')); return; }
-    const rows = [...have].sort((a, b) => opts.asc ? a[field] - b[field] : b[field] - a[field]).slice(0, 5);
-    const vals = have.map((r) => Number(r[field]));
-    const lo = Math.min(...vals), hi = Math.max(...vals);
+    const have = d.data.filter((r) => r[key] != null && r[key] !== '');
+    if (!have.length) { el.append(B.el('p', 'bt-empty', 'Für diese Kennzahl gibt es noch keine Daten.')); return; }
+    const rows = [...have].sort((a, b) => M.asc ? a[key] - b[key] : b[key] - a[key]);
+    const vals = rows.map((r) => Number(r[key]));
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const c = M.center;
+    if (c != null) { const span = Math.max(Math.abs(hi - c), Math.abs(lo - c)) || 1; lo = c - span; hi = c + span; }
+    const pos = (v) => (hi === lo ? 0.5 : (v - lo) / (hi - lo));
     rows.forEach((r, i) => {
+      const v = Number(r[key]);
       const row = B.el('div', 'bt-lrow');
-      const v = B.mark(B.el('span', 'v', opts.fmt(Number(r[field]))), 'staerken', field, 'team=' + encodeURIComponent(r.team));
-      row.append(B.el('span', 'n', String(i + 1)), B.crest(r.team), B.el('span', null, r.team), v);
-      const bar = B.el('div', 'bt-lbar'); const fill = B.el('div');
-      const share = hi === lo ? 1 : (opts.asc ? (hi - Number(r[field])) : (Number(r[field]) - lo)) / (hi - lo);
-      fill.style.width = Math.max(4, Math.round(100 * share)) + '%';
-      bar.append(fill); row.append(bar);
+      const bar = B.el('div', 'bar');
+      const fill = B.el('div');
+      if (c != null) {
+        const p0 = pos(c), p1 = pos(v);
+        fill.style.left = (Math.min(p0, p1) * 100) + '%';
+        fill.style.width = Math.max(1, Math.abs(p1 - p0) * 100) + '%';
+        if (v < c) fill.classList.add('neg');
+        const z = B.el('i'); z.style.left = (p0 * 100) + '%'; bar.append(z);
+      } else {
+        const share = M.asc ? (hi - v) / ((hi - lo) || 1) : (v - lo) / ((hi - lo) || 1);
+        fill.style.left = '0'; fill.style.width = Math.max(3, share * 100) + '%';
+      }
+      bar.prepend(fill);
+      const val = B.mark(B.el('span', 'v', M.fmt(v)), 'staerken', key, 'team=' + encodeURIComponent(r.team));
+      row.append(B.el('span', 'n', String(i + 1)), B.crest(r.team), B.el('span', 't', r.team), bar, val);
       el.append(row);
     });
   });
-  leader('top-xg', 'xg_diff', {fmt: (v) => window.bt.sgn(v)});
-  leader('top-xt', 'xt_diff', {fmt: (v) => window.bt.sgn(v, 3)});
-  leader('top-fk', 'feldkontrolle', {fmt: (v) => window.bt.nf1.format(v) + ' %'});
-  leader('top-form', 'form', {fmt: (v) => window.bt.sgn(v)});
-  leader('top-ball', 'ballbesitz', {fmt: (v) => window.bt.nf1.format(v) + ' %'});
-  leader('top-ppda', 'ppda', {asc: true, fmt: (v) => window.bt.nf1.format(v)});
+
+  // Letzter Spieltag: Tipp gegen Ergebnis (Spiele-Seite)
+  dash.draw('letzter-st', (el) => {
+    const B = window.bt;
+    const d = dash.data('protokoll');
+    el.replaceChildren();
+    if (d.status === 'error') { B.errorRow(el, 4, 'Das Protokoll konnte nicht geladen werden.'); return; }
+    if (d.status !== 'ok') return;
+    const ev = d.data.filter((r) => Number(r.ausgewertet) === 1 && r.liga === 'bl1');
+    if (!ev.length) { B.errorRow(el, 4, 'Noch keine ausgewerteten Spiele.'); return; }
+    const last = ev.reduce((a, r) => (String(r.anpfiff) > String(a.anpfiff) ? r : a), ev[0]);
+    const rows = ev.filter((r) => r.saison === last.saison && r.spieltag === last.spieltag).sort((a, b) => String(a.anpfiff).localeCompare(String(b.anpfiff)));
+    for (const r of rows) {
+      const tr = B.el('tr');
+      tr.dataset.key = String(r.match_id);
+      const ok = Number(r.tendenz_richtig) === 1, exakt = Number(r.tipp_exakt) === 1;
+      tr.append(B.el('td', 'l team', r.spiel), B.el('td', null, r.tipp), B.el('td', null, r.ergebnis),
+        B.el('td', 'l ' + (ok ? 'bt-ok' : 'bt-no'), ok ? (exakt ? '✓ exakt' : '✓ richtig') : '✗ falsch'));
+      el.append(tr);
+    }
+  });
+
+  // Kurztabelle (Spiele-Seite)
+  dash.draw('liga-mini', (el) => {
+    const B = window.bt;
+    const d = dash.data('staerken');
+    el.replaceChildren();
+    if (d.status === 'error') { B.errorRow(el, 5, 'Die Tabelle konnte nicht geladen werden.'); return; }
+    if (d.status !== 'ok') return;
+    const zone = (p) => p <= 4 ? 'var(--zone-cl)' : p === 5 ? 'var(--zone-el)' : p === 6 ? 'var(--zone-ecl)' : p >= 16 ? 'var(--zone-rel)' : null;
+    for (const r of [...d.data].sort((a, b) => Number(a.platz) - Number(b.platz))) {
+      const tr = B.el('tr');
+      tr.dataset.key = r.team;
+      const pos = B.el('td', 'pos l', String(r.platz ?? '–'));
+      const z = zone(Number(r.platz));
+      if (z) { const i = B.el('span', 'bt-zone'); i.style.background = z; pos.prepend(i); }
+      const team = B.el('td', 'team l'); const tdv = B.el('div'); tdv.append(B.crest(r.team), B.el('span', null, r.team)); team.append(tdv);
+      const diff = Number(r.tordifferenz);
+      tr.append(pos, team, B.el('td', null, String(r.sp)), B.el('td', diff > 0 ? 'bt-pos' : diff < 0 ? 'bt-neg' : '', (diff > 0 ? '+' : '') + diff), B.el('td', 'pts', String(r.punkte)));
+      el.append(tr);
+    }
+  });
 
   // Schusskarte: Spielauswahl
   window.btShot = window.btShot || {match: null};
@@ -887,7 +1048,7 @@
     const tip = B.tip(el);
     svg.append('g').selectAll('rect').data(d.data).join('rect')
       .attr('x', (r) => x(r.spieltag)).attr('width', x.bandwidth()).attr('y', (r) => y(r.tendenz)).attr('height', (r) => y(0) - y(r.tendenz)).attr('rx', 4)
-      .style('fill', (r) => r.tendenz >= 50 ? 'var(--accent)' : 'var(--draw)')
+      .style('fill', (r) => r.tendenz >= 50 ? 'var(--primary)' : 'var(--draw)')
       .attr('data-source', 'je_spieltag').attr('data-field', 'tendenz').attr('data-where', (r) => 'spieltag=' + r.spieltag)
       .on('pointermove', (ev, r) => { tip.textContent = `${r.spieltag}. Spieltag: ${B.nf1.format(r.tendenz)} % von ${r.spiele} Spielen`; B.placeTip(tip, el, ev); })
       .on('pointerleave', () => { tip.hidden = true; });
@@ -905,7 +1066,10 @@
     el.replaceChildren();
     if (d.status === 'error') { B.errorRow(el, 6, 'Das Protokoll konnte nicht geladen werden.'); return; }
     if (d.status !== 'ok') return;
-    const rows = d.data.filter((r) => Number(r.ausgewertet) === 1).sort((a, b) => String(b.anpfiff).localeCompare(String(a.anpfiff))).slice(0, 18);
+    const f = (window.btUi || {}).filter || 'alle';
+    const keep = (r) => f === 'richtig' ? Number(r.tendenz_richtig) === 1 : f === 'falsch' ? Number(r.tendenz_richtig) !== 1 : f === 'exakt' ? Number(r.tipp_exakt) === 1 : f === 'live' ? r.art === 'live' : true;
+    const rows = d.data.filter((r) => Number(r.ausgewertet) === 1 && keep(r)).sort((a, b) => String(b.anpfiff).localeCompare(String(a.anpfiff))).slice(0, 24);
+    if (!rows.length) { B.errorRow(el, 6, 'Keine Tipps für diesen Filter.'); return; }
     for (const r of rows) {
       const tr = B.el('tr');
       tr.dataset.key = String(r.match_id);

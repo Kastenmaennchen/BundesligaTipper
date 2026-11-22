@@ -16,7 +16,8 @@ Jede Nacht gegen 23:40 Uhr rechnet ein geplanter Lauf das Modell neu (Ergebnisse
 | `site.js` | lädt die Daten und zeichnet die Bereiche |
 | `data/*.json` | Prognosen, Tipp-Protokoll, Tabelle und Teamwerte, Modell-Kennzahlen, Spielstatistik, Spielereignisse |
 | `d3.min.js` | d3 v7.9.0 (ISC-Lizenz) |
-| `fonts/` | Barlow und Barlow Condensed (SIL Open Font License 1.1) |
+| `fonts/` | Fira Sans und Fira Code (SIL Open Font License 1.1) |
+| `LICENSE-Phosphor.txt` | Lizenz der Phosphor-Symbole (MIT) |
 
 Die Datendateien enthalten im Feld `meta` die Datenquellen und den Zeitpunkt der Berechnung. Bei den Spielereignissen sind nur Spiele mit genauen Feldpositionen enthalten (für die Schusskarte).
 

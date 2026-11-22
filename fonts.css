@@ -1,5 +1,5 @@
-/* Barlow und Barlow Condensed (SIL Open Font License 1.1, The Barlow Project Authors), Latin-Untermenge – siehe fonts/OFL-Barlow.txt */
-@font-face{font-family:'BT Barlow Condensed';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/barlow-condensed-latin-600-normal.woff2') format('woff2');}
-@font-face{font-family:'BT Barlow Condensed';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/barlow-condensed-latin-700-normal.woff2') format('woff2');}
-@font-face{font-family:'BT Barlow';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/barlow-latin-400-normal.woff2') format('woff2');}
-@font-face{font-family:'BT Barlow';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/barlow-latin-600-normal.woff2') format('woff2');}
+/* Fira Sans und Fira Code (SIL Open Font License 1.1, The Mozilla Foundation / Carrois), Latin-Untermenge – siehe fonts/OFL-Fira.txt */
+@font-face{font-family:'BT Fira Sans';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/fira-sans-latin-400-normal.woff2') format('woff2');}
+@font-face{font-family:'BT Fira Sans';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/fira-sans-latin-600-normal.woff2') format('woff2');}
+@font-face{font-family:'BT Fira Sans';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/fira-sans-latin-700-normal.woff2') format('woff2');}
+@font-face{font-family:'BT Fira Code';font-style:normal;font-weight:600 700;font-display:swap;src:url('fonts/fira-code-latin-600-normal.woff2') format('woff2');}
