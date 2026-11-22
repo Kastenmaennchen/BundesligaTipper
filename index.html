@@ -185,6 +185,16 @@
   .bt-scores { display: flex; flex-wrap: wrap; gap: var(--s2); justify-content: center; }
   .bt-chip { background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; }
   .bt-chip b { font-family: var(--mono); margin-right: 6px; }
+  .bt-duels { display: grid; gap: 4px; font-size: 13px; }
+  .bt-duel { display: grid; grid-template-columns: 84px minmax(0,1fr) auto minmax(0,1fr); gap: var(--s2); align-items: center; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  .bt-duel:last-child { border-bottom: 0; }
+  .bt-duel .d { color: var(--faint); font-family: var(--mono); font-size: 12px; }
+  .bt-duel .h { text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bt-duel .a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bt-duel .e { font-family: var(--mono); font-weight: 700; padding: 1px 8px; border-radius: 6px; background: var(--surface-2); }
+  .bt-duel .e.w { background: var(--win-soft); color: var(--win); } .bt-duel .e.l { background: var(--loss-soft); color: var(--loss); }
+  .bt-duelsum { text-align: center; color: var(--muted); font-size: 12.5px; }
+  .bt-duelsum b { color: var(--fg); font-family: var(--text); letter-spacing: 0; }
   .bt-miss { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); font-size: 12.5px; color: var(--muted); }
   .bt-miss span:last-child { text-align: right; }
   .bt-miss b { color: var(--fg); font-weight: 600; }
@@ -477,6 +487,7 @@
             <dt>xG</dt><dd>eigenes Modell aus <span class="num" data-draw="m-shots" data-source="modell" data-field="raum_schuesse" data-row="0">—</span> Schüssen mit Position (<span class="num" data-draw="m-raum" data-source="modell" data-field="raum_spiele" data-row="0">—</span> Spiele): Entfernung, Winkel, Kopfball, Freistoß, Flanke, Steilpass, Konter. Elfmeter <span class="num" data-draw="m-pen" data-source="modell" data-field="elfmeter_xg" data-row="0">—</span>. Ältere Spiele: Schätzung aus Schusszahlen.</dd>
             <dt>FotMob-xG</dt><dd><span class="num" data-draw="m-fmn" data-source="modell" data-field="fotmob_spiele" data-row="0">—</span> Spiele eingetragen, zählen zu <b class="num" data-draw="m-fmw" data-source="modell" data-field="fotmob_gewicht" data-row="0">—</b> % (steigt von 20 auf 70 %)</dd>
             <dt>Ausfälle</dt><dd>Stammspieler (Startelf in mind. der Hälfte der letzten 10 Spiele, gewichtet nach Toren und Vorlagen), die vermutlich fehlen: Rot oder Gelbsperre im letzten Spiel oder nicht im letzten Kader. Fehlt ein Viertel dieser Stärke, verschiebt das die erwarteten Tore um <b class="num" data-draw="m-aus" data-source="modell" data-field="ausfall_effekt_pct" data-row="0">—</b> %. Verletzungsmeldungen vor dem Spiel kennt das Modell nicht.</dd>
+            <dt>Direkte Duelle</dt><dd>werden bei jedem Spiel angezeigt, fließen aber nicht in die Prognose ein: Im Test an der Saison 2025/26 machten sie die Vorhersagen etwas schlechter, weil die aktuelle Teamstärke diese Information schon enthält.</dd>
             <dt>Form-Index (4 Spiele)</dt><dd data-draw="m-gew" data-source="modell" data-field="gewichte" data-row="0">—</dd>
             <dt>Wirkung der Form</dt><dd>1 Punkt Unterschied verschiebt die erwarteten Tore um <b class="num" data-draw="m-fe" data-source="modell" data-field="form_effekt_pct" data-row="0">—</b> %</dd>
             <dt>Kalibrierung</dt><dd>Korrektur für knappe Ergebnisse zu <b class="num" data-draw="m-rho" data-source="modell" data-field="rho_gewicht" data-row="0">—</b> %, Unentschieden ×<span class="num" data-draw="m-df" data-source="modell" data-field="unentschieden_faktor" data-row="0">—</span>, Siegchancen geschärft mit Faktor <span class="num" data-draw="m-sch" data-source="modell" data-field="schaerfe" data-row="0">—</span>. So passen die Prozente im Test an 358 Spielen zur tatsächlichen Häufigkeit. Der Tipp richtet sich weiter nach den erwarteten Toren.</dd>
@@ -794,6 +805,25 @@
         const mi = B.el('div', 'bt-miss');
         mi.append(B.mark(B.el('span', null, r.fehlen_heim || 'keine'), 'prognosen', 'fehlen_heim', w), B.mark(B.el('span', null, r.fehlen_gast || 'keine'), 'prognosen', 'fehlen_gast', w));
         ga.append(mi);
+      }
+      let duelle = [];
+      try { duelle = JSON.parse(r.duelle || '[]'); } catch (e) { duelle = []; }
+      if (duelle.length) {
+        const gd = group('Letzte direkte Duelle');
+        const [s1, u1, n1] = String(r.duell_bilanz || '0-0-0').split('-');
+        const sum = B.el('p', 'bt-duelsum');
+        sum.append(document.createTextNode('Aus Sicht ' + r.heim + ': '), B.mark(B.el('b', null, `${s1} S · ${u1} U · ${n1} N`), 'prognosen', 'duell_bilanz', w));
+        gd.append(sum);
+        const list = B.el('div', 'bt-duels');
+        for (const du of duelle) {
+          const row = B.el('div', 'bt-duel');
+          const [g1, g2] = String(du.ergebnis).split(':').map(Number);
+          const ourGoals = du.heim === r.heim ? g1 : g2, theirGoals = du.heim === r.heim ? g2 : g1;
+          const res = B.el('span', 'e' + (ourGoals > theirGoals ? ' w' : ourGoals < theirGoals ? ' l' : ''), du.ergebnis);
+          row.append(B.el('span', 'd', du.datum + (du.liga === 'bl2' ? ' · 2.L' : '')), B.el('span', 'h', du.heim), res, B.el('span', 'a', du.gast));
+          list.append(row);
+        }
+        gd.append(list);
       }
       if (H && A) {
         const tw = (t) => 'team=' + encodeURIComponent(t);
