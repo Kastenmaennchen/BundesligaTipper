@@ -1,0 +1,61 @@
+name: Daten aktualisieren
+
+# Rechnet jede Nacht Tipps, Tabelle, Meisterchancen und Statistiken neu und legt sie unter data/ ab.
+# Gedächtnis zwischen den Läufen: das Protokoll in data/protokoll.json (wird mitversioniert) und
+# zwischengespeicherte Rohdaten in modell/daten (Actions-Cache, nicht im Repository).
+on:
+  schedule:
+    - cron: "47 22 * * *"   # 22:47 UTC = 23:47 Uhr Winterzeit / 0:47 Uhr Sommerzeit
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daten
+  cancel-in-progress: false
+
+jobs:
+  daten:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Abhängigkeiten installieren
+        run: python -m pip install numpy==2.5.3 scipy==1.18.1
+
+      - name: Zwischenspeicher laden
+        uses: actions/cache@v4
+        with:
+          path: modell/daten
+          key: modell-daten-${{ github.run_id }}
+          restore-keys: modell-daten-
+
+      - name: FotMob-xG aus den bisherigen Daten übernehmen
+        run: python modell/fotmob_aus_statistik.py data/statistik.json "$RUNNER_TEMP/fotmob.json"
+
+      - name: Modell rechnen
+        run: >
+          python modell/bundesliga_tipp.py
+          --import-protokoll data/protokoll.json
+          --import-fotmob "$RUNNER_TEMP/fotmob.json"
+          --export "$RUNNER_TEMP/export"
+          --html "$RUNNER_TEMP/vorhersage.html"
+          --site .
+
+      - name: Neue Daten speichern
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "Keine Änderungen."
+          else
+            git commit -m "Daten vom $(date -u +%Y-%m-%d)"
+            git push
+          fi
