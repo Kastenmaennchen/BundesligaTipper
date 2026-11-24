@@ -126,6 +126,7 @@
   .bt-panel { display: grid; gap: var(--s5); padding-top: var(--s4); }
   .bt-grid { display: grid; gap: var(--s5); }
   @media (min-width: 1000px) { .bt-grid.two { grid-template-columns: minmax(0, 5fr) minmax(0, 3fr); align-items: start; } }
+  @media (min-width: 1100px) { .bt-grid.half { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
   .bt-grid > *, .bt-panel > * { min-width: 0; }
   .bt-card { background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r); }
   .bt-card-h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px var(--s3); padding: var(--s3) var(--s4) var(--s2); border-bottom: 2px solid var(--red); }
@@ -181,11 +182,12 @@
   .bt-iconbtn .bt-ico { width: 18px; height: 18px; }
   .bt-select-sm { min-height: 40px; font-size: 15px; }
   .bt-vorschau { margin: 0; padding: var(--s2) var(--s4); background: var(--paper-2); color: var(--ink-2); font-size: 13px; border-bottom: 1px solid var(--rule); }
-  .bt-mbar { width: 140px; height: 10px; background: var(--paper-2); }
+  .bt-mbar { width: 100px; height: 10px; background: var(--paper-2); }
   .bt-mbar > div { height: 100%; background: var(--ink); }
+  .bt-mbar.ab > div { background: var(--zone-rel); }
+  #meisterschaft .bt-table th, #abstieg .bt-table th { white-space: normal; vertical-align: bottom; }
   @media (max-width: 520px) {
     .bt-mcol, .bt-pjetzt { display: none; }
-    #meisterschaft .bt-table th { white-space: normal; }
   }
 
   /* Tipps des Spieltags */
@@ -439,6 +441,7 @@
 
     <!-- TABELLE -->
     <section class="bt-panel" id="tabelle" role="tabpanel" aria-labelledby="tab-tabelle" hidden>
+      <div class="bt-grid half">
       <div class="bt-card" id="meisterschaft">
         <div class="bt-card-h"><h2>Meisterschaft</h2><span class="bt-hint"><span data-draw="m-sim" data-source="modell" data-field="meister_simulationen" data-row="0">—</span> simulierte Restsaisons</span></div>
         <div class="bt-tw">
@@ -447,7 +450,18 @@
             <tbody data-draw="meister"></tbody>
           </table>
         </div>
-        <p class="bt-note">Das Modell spielt jedes restliche Spiel mit seinen erwarteten Toren aus, 10.000-mal, und zählt, wie oft jedes Team am Ende vorn steht. Die Teamstärke wird dabei je Durchlauf leicht gestreut, weil auch sie nur geschätzt ist. Im Rückblick auf die Saisons 2022/23 bis 2025/26 lagen die Chancen deutlich näher am Ausgang als eine Hochrechnung der Tabelle; einen Überraschungsmeister wie Leverkusen 2023/24 sah das Modell bis zur Winterpause aber nur bei 10 bis 25 %.</p>
+        <p class="bt-note">Das Modell spielt jedes restliche Spiel mit seinen erwarteten Toren aus, 10.000-mal, und zählt, wo jedes Team am Ende steht. Die Teamstärke wird dabei je Durchlauf leicht gestreut, weil auch sie nur geschätzt ist. Im Rückblick auf die Saisons 2022/23 bis 2025/26 lagen die Chancen deutlich näher am Ausgang als eine Hochrechnung der Tabelle; einen Überraschungsmeister wie Leverkusen 2023/24 sah das Modell bis zur Winterpause aber nur bei 10 bis 25 %.</p>
+      </div>
+      <div class="bt-card" id="abstieg">
+        <div class="bt-card-h"><h2>Abstieg</h2><span class="bt-hint">aus denselben simulierten Restsaisons</span></div>
+        <div class="bt-tw">
+          <table class="bt-table" data-source="staerken" data-row-key="team">
+            <thead><tr><th class="l">#</th><th data-field="team" class="l">Team</th><th data-field="relegation_pct">Relegation</th><th data-field="abstieg_pct">Abstieg</th><th class="bt-mcol" aria-hidden="true"></th><th data-field="erw_punkte">Ø Punkte am Ende</th></tr></thead>
+            <tbody data-draw="abstieg"></tbody>
+          </table>
+        </div>
+        <p class="bt-note">Abstieg heißt Platz 17 oder 18, Relegation Platz 16 mit zwei Spielen gegen den Dritten der 2. Liga. Teams ohne messbare Gefahr sind nicht aufgeführt. Im Rückblick auf vier Saisons trafen die Chancen besser als eine reine Tabellen-Hochrechnung; stark gefährdete Teams stiegen aber etwas öfter ab als angegeben, kaum gefährdete etwas seltener.</p>
+      </div>
       </div>
       <div class="bt-card">
         <div class="bt-card-h"><h2>Tabelle</h2><span class="bt-hint">Spaltenkopf antippen zum Sortieren</span></div>
@@ -997,6 +1011,30 @@
         B.el('td', 'bt-pjetzt', String(r.punkte)),
         B.mark(B.el('td', null, r.erw_punkte == null ? '–' : B.nf1.format(r.erw_punkte)), 'staerken', 'erw_punkte', w),
         B.mark(B.el('td', null, r.erw_platz == null ? '–' : B.nf1.format(r.erw_platz)), 'staerken', 'erw_platz', w));
+      el.append(tr);
+    });
+  });
+
+  dash.draw('abstieg', (el) => {
+    const B = window.bt;
+    const d = dash.data('staerken');
+    el.replaceChildren();
+    if (d.status === 'error') { B.errorRow(el, 6, 'Die Abstiegschancen konnten nicht geladen werden.'); return; }
+    if (d.status !== 'ok') return;
+    if (!d.data.some((r) => r.abstieg_pct != null)) { B.errorRow(el, 6, 'Die Abstiegschancen werden im nächsten nächtlichen Lauf berechnet.'); return; }
+    const gefahr = (r) => Number(r.abstieg_pct || 0) + Number(r.relegation_pct || 0);
+    const rows = d.data.filter((r) => gefahr(r) >= 0.1).sort((a, b) => (b.abstieg_pct - a.abstieg_pct) || (gefahr(b) - gefahr(a)));
+    if (!rows.length) { B.errorRow(el, 6, 'Kein Team ist derzeit messbar abstiegsgefährdet.'); return; }
+    rows.forEach((r, i) => {
+      const tr = B.el('tr');
+      tr.dataset.key = r.team;
+      const w = 'team=' + encodeURIComponent(r.team);
+      const bar = B.el('td', 'bt-mcol l'); const bw = B.el('div', 'bt-mbar ab'); const bf = B.el('div');
+      bf.style.width = Math.max(0, Number(r.abstieg_pct)) + '%'; bw.append(bf); bar.append(bw);
+      tr.append(B.el('td', 'l', String(i + 1)), B.el('td', 'team l', r.team),
+        B.mark(B.el('td', null, window.btPct(r.relegation_pct)), 'staerken', 'relegation_pct', w),
+        B.mark(B.el('td', 'pts', window.btPct(r.abstieg_pct)), 'staerken', 'abstieg_pct', w), bar,
+        B.mark(B.el('td', null, r.erw_punkte == null ? '–' : B.nf1.format(r.erw_punkte)), 'staerken', 'erw_punkte', w));
       el.append(tr);
     });
   });

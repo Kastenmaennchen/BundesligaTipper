@@ -1569,6 +1569,8 @@ def export_dashboard(out: Path, season, day, rows, log, params, model, matches, 
             r["meister_pct"] = round(100 * float(sim["meister"][i]), 2)
             r["erw_punkte"] = round(float(sim["erw_punkte"][i]), 1)
             r["erw_platz"] = round(float(sim["erw_platz"][i]), 1)
+            r["relegation_pct"] = round(100 * float(sim["platz_p"][i, 15]), 2)       # Platz 16
+            r["abstieg_pct"] = round(100 * float(sim["platz_p"][i, 16:].sum()), 2)  # Platz 17 und 18
     write("staerken.json", staerken)
 
     by_id = {m.id: m for m in matches}
