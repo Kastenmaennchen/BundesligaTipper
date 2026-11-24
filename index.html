@@ -564,7 +564,7 @@
           <div class="bt-card-h"><h2>So rechnet das Modell</h2></div>
           <dl class="bt-facts">
             <dt>Teamstärke</dt><dd>aus Toren und xG gelernt, xG zählt zu <b class="num" data-draw="m-wxg" data-source="modell" data-field="xg_gewicht" data-row="0">—</b> %</dd>
-            <dt>xG</dt><dd>eigenes Modell aus <span class="num" data-draw="m-shots" data-source="modell" data-field="raum_schuesse" data-row="0">—</span> Schüssen mit Position (<span class="num" data-draw="m-raum" data-source="modell" data-field="raum_spiele" data-row="0">—</span> Spiele): Entfernung, Winkel, Kopfball, Freistoß, Flanke, Steilpass, Konter. Elfmeter <span class="num" data-draw="m-pen" data-source="modell" data-field="elfmeter_xg" data-row="0">—</span>. Ältere Spiele: Schätzung aus Schusszahlen.</dd>
+            <dt>xG</dt><dd>eigenes Modell aus <span class="num" data-draw="m-shots" data-source="modell" data-field="raum_schuesse" data-row="0">—</span> Schüssen seit 2024/25: Entfernung, Winkel, Kopfball, Freistoß, Art der Vorlage (Flanke, Steilpass, Konter, Ecke, Standard, ohne Vorlage) und Ort laut Spielbericht. Je Spiel zur Hälfte mit einer Schätzung aus Schüssen und Schüssen aufs Tor gemischt, weil das im Test die Prognosen am besten hielt. Elfmeter <span class="num" data-draw="m-pen" data-source="modell" data-field="elfmeter_xg" data-row="0">—</span>.</dd>
             <dt>FotMob-xG</dt><dd><span class="num" data-draw="m-fmn" data-source="modell" data-field="fotmob_spiele" data-row="0">—</span> Spiele eingetragen, zählen zu <b class="num" data-draw="m-fmw" data-source="modell" data-field="fotmob_gewicht" data-row="0">—</b> % (steigt von 20 auf 70 %)</dd>
             <dt>Ausfälle</dt><dd>Stammspieler (Startelf in mind. der Hälfte der letzten 10 Spiele, gewichtet nach Toren und Vorlagen), die vermutlich fehlen: Rot oder Gelbsperre im letzten Spiel oder nicht im letzten Kader. Fehlt ein Viertel dieser Stärke, verschiebt das die erwarteten Tore um <b class="num" data-draw="m-aus" data-source="modell" data-field="ausfall_effekt_pct" data-row="0">—</b> %. Verletzungsmeldungen vor dem Spiel kennt das Modell nicht.</dd>
             <dt>Direkte Duelle</dt><dd>werden bei jedem Spiel angezeigt, fließen aber nicht in die Prognose ein: Im Test an der Saison 2025/26 machten sie die Vorhersagen etwas schlechter, weil die aktuelle Teamstärke diese Information schon enthält.</dd>
@@ -768,7 +768,6 @@
   B.text('q-live-t', 'bilanz', 'tendenz', grp('live'), pct1);
   B.text('m-wxg', 'modell', 'xg_gewicht', first, pct0);
   B.text('m-shots', 'modell', 'raum_schuesse', first, (v) => B.nf0.format(Number(v)));
-  B.text('m-raum', 'modell', 'raum_spiele', first);
   B.text('m-pen', 'modell', 'elfmeter_xg', first, (v) => B.nf2.format(Number(v)));
   B.text('m-gew', 'modell', 'gewichte', first, (v) => String(v).replace(/(\d)\.(\d)/g, '$1,$2'));
   B.text('m-fe', 'modell', 'form_effekt_pct', first, pct1);

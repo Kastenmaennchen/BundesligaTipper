@@ -189,6 +189,37 @@ SHOT_TYPES = ("Shot Off Target", "Shot Blocked", "Shot On Target", "Shot Hit Woo
 EVENT_CODES = {"Foul": "F", "Corner Awarded": "C", "Offside": "O", "Handball": "F", "Pass": "P"}
 
 
+EV_VERSION = 3   # 3: Merkmale aus dem Kommentar, alte ESPN-Koordinaten ungerundet umgerechnet, Datenquelle markiert
+SHOT_ZONES = (("six yard box", "F"), ("very close range", "N"), ("centre of the box", "M"), ("side of the box", "D"),
+              ("difficult angle", "W"), ("outside the box", "A"), ("more than 35 yards", "L"),
+              ("more than 40 yards", "L"), ("long range", "L"))
+
+
+def shot_flags(typ: str, text: str) -> str:
+    """Merkmale eines Schusses aus dem ESPN-Kommentar – nur, was vor dem Schuss feststeht
+    (Ort, Körperteil, Art der Vorlage), nie der Ausgang."""
+    t = text.lower()
+    pre = t.split(" is ")[0] if " is " in t else t
+    vor = t.split("assisted")[0]
+    fl = ""
+    if "Penalty" in typ or "penalty" in t:
+        fl += "E"
+    if typ == "Goal - Header" or "header" in pre:
+        fl += "H"
+    if typ == "Goal - Free-kick" or "free kick" in vor:
+        fl += "K"
+    for key, code in (("with a cross", "X"), ("through ball", "T"), ("fast break", "B"), ("following a corner", "C"),
+                      ("set piece", "P"), ("headed pass", "Q")):
+        if key in t:
+            fl += code
+    if "assisted by" not in t:
+        fl += "U"
+    for key, code in SHOT_ZONES:
+        if (key in pre or key in vor) and code not in fl:
+            fl += code
+    return fl
+
+
 def _parse_events(summary: dict, names: dict) -> list:
     """Spielereignisse mit Feldposition. Kompakt: [team, typ, x, y, sekunde, merkmale, tor].
     team = 'h'/'a' (wer die Aktion ausführt; bei Fouls das foulende Team), x/y in Prozent aus
@@ -205,29 +236,14 @@ def _parse_events(summary: dict, names: dict) -> list:
             continue
         sec = float(p.get("clock", {}).get("value") or 0)
         if t in SHOT_TYPES:
-            tx = p.get("text", "").lower()
-            fl = ""
-            if "Penalty" in t or "penalty" in tx:
-                fl += "E"
-            if t == "Goal - Header" or "header" in tx:
-                fl += "H"
-            if t == "Goal - Free-kick" or "direct free kick" in tx or "free kick" in tx.split("assisted")[0]:
-                fl += "K"
-            if "cross" in tx:
-                fl += "X"
-            if "through ball" in tx:
-                fl += "T"
-            if "fast break" in tx:
-                fl += "B"
-            if "very close range" in tx:
-                fl += "N"
+            fl = shot_flags(t, p.get("text", ""))
             goal = 1 if t.startswith("Goal") or t == "Penalty - Scored" else 0
             x, y = p.get("fieldPositionX"), p.get("fieldPositionY")
             if "E" in fl:
                 x, y = 88.6, 50.0
             if x is None or y is None:
                 continue
-            out.append([team, "S", round(float(x), 1), round(float(y), 1), sec, fl, goal])
+            out.append([team, "S", float(x), float(y), sec, fl, goal])   # gerundet wird erst nach der Umrechnung
         elif t in EVENT_CODES and p.get("fieldPositionX") is not None:
             out.append([team, EVENT_CODES[t], float(p["fieldPositionX"]),
                         float(p.get("fieldPositionY", 50)), sec, "", 0])
@@ -235,17 +251,26 @@ def _parse_events(summary: dict, names: dict) -> list:
 
 
 def normalize_events(ev: list) -> list:
-    """ESPN liefert Positionen je Spiel mal in Prozent (0–100), mal als Anteil (0–1).
-    Alles auf Prozent bringen; Elfmeter stehen fest auf dem Punkt."""
+    """Bringt Positionen auf eine Konvention: Prozent, x = 100 ist das Tor, auf das geschossen wird.
+    Bis 2025/26 lieferte ESPN Anteile (0–1), bei Schüssen ist x dort der Abstand zum Tor als Anteil der
+    halben Feldlänge (am Kommentartext geprüft: „centre of the box“ ≈ 0,2 → gut 10 m). Für die übrigen
+    Ereignisse dieser Spiele ist die Konvention nicht geprüft; sie werden weggelassen.
+    Elfmeter stehen fest auf dem Punkt."""
     free = [e for e in ev if not (e[1] == "S" and "E" in e[5])]
-    scale = 100.0 if free and max(max(e[2], e[3]) for e in free) <= 1.0 else 1.0
+    alt = bool(free) and max(max(e[2], e[3]) for e in free) <= 1.0
     out = []
     for e in ev:
         e = list(e)
         if e[1] == "S" and "E" in e[5]:
             e[2], e[3] = 88.6, 50.0
+        elif alt:
+            if e[1] != "S" or (e[2] == 0 and e[3] == 0):
+                continue
+            e[2], e[3] = round(min(max(100 - 50 * e[2], 0), 100), 1), round(min(max(100 * e[3], 0), 100), 1)
         else:
-            e[2], e[3] = round(min(max(e[2] * scale, 0), 100), 1), round(min(max(e[3] * scale, 0), 100), 1)
+            e[2], e[3] = round(min(max(e[2], 0), 100), 1), round(min(max(e[3], 0), 100), 1)
+            if e[1] == "S" and "Z" not in e[5]:
+                e[5] += "Z"     # neue ESPN-Datenquelle (ab 2026/27): mehr Schüsse je Spiel, seltener ein Tor je Schuss
         out.append(e)
     return out
 
@@ -288,6 +313,7 @@ def _parse_summary(summary: dict):
     if len(out) != 2:
         return None
     out["ev"] = _parse_events(summary, names)
+    out["evv"] = EV_VERSION
     out["lu"] = _parse_lineups(summary)
     return out
 
@@ -304,7 +330,8 @@ def load_stats(matches: list[Match], now: datetime, offline: bool = False,
     cur = current_season(now)
     need = [m for m in matches if m.league == "bl1" and m.finished
             and m.season >= cur - STAT_SEASONS_BACK
-            and (str(m.id) not in stats or "ev" not in stats[str(m.id)] or "lu" not in stats[str(m.id)])]
+            and (str(m.id) not in stats or "ev" not in stats[str(m.id)] or "lu" not in stats[str(m.id)]
+                 or stats[str(m.id)].get("evv") != EV_VERSION)]
     if need and not offline:
         by_date: dict[str, list[Match]] = {}
         for m in need:
@@ -377,8 +404,8 @@ PENALTY_XG = 0.76
 # --------------------------------------------------------------------------
 
 PITCH_L, PITCH_W = 105.0, 68.0
-XG_FEATURES = ["Konstante", "Entfernung (m)", "Winkel (rad)", "Kopfball", "Freistoß direkt",
-               "nach Flanke", "nach Steilpass", "nach Konter", "sehr kurze Distanz"]
+XG_SCHUSS_ANTEIL = 0.5  # xG je Spiel: halb Schuss-Modell, halb Schätzung aus Schusszahlen (inkl. aufs Tor); im Test so gut wie bisher, rein aus Schüssen etwas schlechter
+XG_RIDGE = 10.0    # im Test (6 Saisons, je eine herausgehalten) zwischen 1 und 50 praktisch gleich gut
 XT_XBINS = [0, 33.3, 50, 66.7, 83.3, 100.01]     # Zonen in Spielrichtung (Prozent der Feldlänge)
 XT_YBINS = [0, 25, 75, 100.01]                   # Flügel / Mitte / Flügel
 XT_WINDOW = 120                                   # Sekunden: Tor innerhalb dieser Zeit = Gefahr
@@ -396,25 +423,42 @@ def shot_geometry(x: float, y: float):
 
 
 def shot_row(e) -> list[float]:
-    dist, ang = shot_geometry(e[2], e[3])
+    """Merkmale eines Schusses (ohne Konstante): Distanz und Winkel nichtlinear, Körperteil,
+    Vorlagenart und Ortsangabe aus dem Kommentar. Getestet in xg_test.py."""
+    d, a = shot_geometry(e[2], e[3])
     fl = e[5]
-    return [1.0, dist, ang, float("H" in fl), float("K" in fl), float("X" in fl),
-            float("T" in fl), float("B" in fl), float("N" in fl)]
+    h = float("H" in fl)
+    return [d, math.log(d), d * d / 100, a, a * a, a * d / 10, h, h * d / 10, float("K" in fl),
+            float("X" in fl), float("T" in fl), float("B" in fl), float("C" in fl), float("P" in fl),
+            float("Q" in fl), float("U" in fl), float("F" in fl), float("N" in fl), float("M" in fl),
+            float("D" in fl), float("W" in fl), float("A" in fl), float("L" in fl), float("Z" in fl)]
 
 
-def fit_logistic(X: np.ndarray, y: np.ndarray, ridge: float = 1.0, iters: int = 50) -> np.ndarray:
+def fit_logistic(X: np.ndarray, y: np.ndarray, ridge: float = 1.0, iters: int = 100) -> np.ndarray:
+    """Ridge-logistische Regression (erste Spalte = Konstante, ohne Strafe); Newton mit
+    Schrittweitenkontrolle, damit sie auch bei vielen, verwandten Merkmalen sicher konvergiert."""
     w = np.zeros(X.shape[1])
     w[0] = math.log(max(y.mean(), 1e-3) / max(1 - y.mean(), 1e-3))
     R = np.eye(X.shape[1]) * ridge
     R[0, 0] = 0
+
+    def loss(v):
+        z = X @ v
+        return float(np.sum(np.logaddexp(0, z) - y * z) + 0.5 * v @ R @ v)
+    f = loss(w)
     for _ in range(iters):
-        p = 1 / (1 + np.exp(-(X @ w)))
-        W = p * (1 - p)
+        p = 1 / (1 + np.exp(-np.clip(X @ w, -30, 30)))
         g = X.T @ (p - y) + R @ w
-        Hm = X.T @ (X * W[:, None]) + R
+        Hm = X.T @ (X * (p * (1 - p))[:, None]) + R + 1e-6 * np.eye(len(w))
         step = np.linalg.solve(Hm, g)
-        w -= step
-        if np.max(np.abs(step)) < 1e-8:
+        t, fn = 1.0, f
+        while t > 1e-4:
+            fn = loss(w - t * step)
+            if fn <= f:
+                break
+            t /= 2
+        w, f_old, f = w - t * step, f, fn
+        if f_old - f < 1e-9:
             break
     return w
 
@@ -423,7 +467,7 @@ def events_ok(ev: list) -> bool:
     """Nur Spiele mit genauen, einheitlich ausgerichteten Positionen verwenden
     (ältere ESPN-Daten haben grobe 10er-Raster und wechselnde Richtung)."""
     shots = [e for e in ev if e[1] == "S" and "E" not in e[5]]
-    if len(shots) < 4:
+    if len(shots) < 4 or sum(e[1] != "S" for e in ev) < 20:
         return False
     forward = sum(e[2] >= 50 for e in shots) / len(shots)
     coarse = sum(e[2] % 10 == 0 and e[3] % 10 == 0 for e in ev) / max(len(ev), 1)
@@ -433,8 +477,9 @@ def events_ok(ev: list) -> bool:
 class Spatial:
     """Lernt aus allen Ereignissen mit Position ein xG-Modell und Zonenwerte (xT-Annäherung)."""
 
-    def __init__(self, events_by_match: dict[str, list]):
-        shots = [e for ev in events_by_match.values() for e in ev if e[1] == "S"]
+    def __init__(self, events_by_match: dict[str, list], shots_by_match: dict[str, list] | None = None):
+        src = events_by_match if shots_by_match is None else shots_by_match
+        shots = [e for ev in src.values() for e in ev if e[1] == "S"]
         np_shots = [e for e in shots if "E" not in e[5]]
         pens = [e for e in shots if "E" in e[5]]
         self.n_shots = len(shots)
@@ -442,10 +487,9 @@ class Spatial:
         if len(np_shots) >= 500:
             X = np.array([shot_row(e) for e in np_shots])
             y = np.array([e[6] for e in np_shots], float)
-            mu, sd = X[:, 1:].mean(axis=0), X[:, 1:].std(axis=0) + 1e-9
-            Xs = X.copy()
-            Xs[:, 1:] = (X[:, 1:] - mu) / sd
-            self.w, self.mu, self.sd = fit_logistic(Xs, y), mu, sd
+            mu, sd = X.mean(axis=0), X.std(axis=0) + 1e-9
+            Xs = np.hstack([np.ones((len(X), 1)), (X - mu) / sd])
+            self.w, self.mu, self.sd = fit_logistic(Xs, y, ridge=XG_RIDGE), mu, sd
             p = self._p(X)
             self.calib = (float(p.sum()), float(y.sum()))
         else:
@@ -471,9 +515,8 @@ class Spatial:
         self.xt_counts = cnt
 
     def _p(self, X: np.ndarray) -> np.ndarray:
-        Xs = X.copy()
-        Xs[:, 1:] = (X[:, 1:] - self.mu) / self.sd
-        return 1 / (1 + np.exp(-(Xs @ self.w)))
+        Xs = np.hstack([np.ones((len(X), 1)), (X - self.mu) / self.sd])
+        return 1 / (1 + np.exp(-np.clip(Xs @ self.w, -30, 30)))
 
     def shot_xg(self, e) -> float:
         if "E" in e[5]:
@@ -588,8 +631,11 @@ class Features:
             self.xg_coef = (0.30, 0.035)
 
         # Raumdaten: nur Spiele mit verlässlichen Positionen
-        self.events = {m.id: s["ev"] for m, s in sm if s.get("ev") and events_ok(s["ev"])}
-        self.spatial = Spatial({str(k): v for k, v in self.events.items()})
+        self.events = {m.id: s["ev"] for m, s in sm if s.get("ev") and s.get("evv") == EV_VERSION and events_ok(s["ev"])}
+        self.shot_events = {m.id: s["ev"] for m, s in sm if s.get("ev") and s.get("evv") == EV_VERSION
+                            and sum(e[1] == "S" for e in s["ev"]) >= 4}
+        self.spatial = Spatial({str(k): v for k, v in self.events.items()},
+                               {str(k): v for k, v in self.shot_events.items()})
         self.n_spatial = len(self.events)
         self.match_spatial: dict[int, dict] = {k: self.spatial.match_values(v) for k, v in self.events.items()}
 
@@ -604,6 +650,15 @@ class Features:
                 self.xg_source[m.id] = "Positionen"
                 xt_d = mv["xt"]["h"] - mv["xt"]["a"]
                 fk_h = 0.5 * mv["territorium_heim"] + 0.5 * h["ballbesitz"]
+            elif m.id in self.shot_events:
+                sx = {"h": 0.0, "a": 0.0}
+                for e in self.shot_events[m.id]:
+                    if e[1] == "S":
+                        sx[e[0]] += self.spatial.shot_xg(e)
+                k = XG_SCHUSS_ANTEIL
+                xh, xa = k * sx["h"] + (1 - k) * self.xg_of(h), k * sx["a"] + (1 - k) * self.xg_of(a)
+                self.xg_source[m.id] = "Schüsse mit Position"
+                xt_d, fk_h = None, None
             else:
                 xh, xa = self.xg_of(h), self.xg_of(a)
                 self.xg_source[m.id] = "Schusszahlen"
@@ -1436,7 +1491,7 @@ def import_ereignisse(path: Path) -> dict:
     out = {}
     for r in json.loads(path.read_text("utf-8"))["rows"]:
         out[str(r["match_id"])] = {"ev": [e[:7] for e in json.loads(r["ereignisse"])],
-                                   "lu": json.loads(r.get("aufstellung") or "{}")}
+                                   "lu": json.loads(r.get("aufstellung") or "{}"), "evv": r.get("ev_version")}
     return out
 
 
@@ -1543,9 +1598,10 @@ def export_dashboard(out: Path, season, day, rows, log, params, model, matches, 
                          key=lambda kv: by_id[int(kv[0])].kickoff):
         m = by_id[int(mid)]
         ok = m.id in feats.events
-        ev = [e + [round(feats.spatial.shot_xg(e), 3) if (e[1] == "S" and ok) else None] for e in s["ev"]]
+        ok_xg = m.id in feats.shot_events
+        ev = [e + [round(feats.spatial.shot_xg(e), 3) if (e[1] == "S" and ok_xg) else None] for e in s["ev"]]
         erows.append({"match_id": m.id, "saison": m.season, "spieltag": m.matchday, "heim": m.home, "gast": m.away,
-                      "tore_heim": m.hg, "tore_gast": m.ag, "positionen_ok": ok, "ereignisse": json.dumps(ev),
+                      "tore_heim": m.hg, "tore_gast": m.ag, "positionen_ok": ok, "ev_version": s.get("evv"), "ereignisse": json.dumps(ev),
                       "aufstellung": json.dumps(s.get("lu", {}), ensure_ascii=False)})
     write("ereignisse.json", erows)
 
@@ -1651,6 +1707,8 @@ def main(argv=None):
         for k, e in import_ereignisse(Path(args.import_ereignisse)).items():
             if k in imported:
                 imported[k]["ev"] = e["ev"]
+                if e.get("evv") is not None:
+                    imported[k]["evv"] = e["evv"]
                 if e["lu"]:
                     imported[k]["lu"] = e["lu"]
     spielstat = load_stats(matches, now, args.offline, imported)
@@ -1663,8 +1721,8 @@ def main(argv=None):
     feats = Features(matches, spielstat, fotmob)
     if feats.fotmob:
         print(f"  FotMob-xG für {len(feats.fotmob)} Spiele, Gewicht {feats.w_fotmob:.0%}")
-    print(f"  {feats.n_stat_matches} Spiele mit Statistik, davon {feats.n_spatial} mit genauen Positionen "
-          f"({feats.spatial.n_shots} Schüsse für das xG-Modell)")
+    print(f"  {feats.n_stat_matches} Spiele mit Statistik, davon {feats.n_spatial} mit genauen Positionen, "
+          f"{len(feats.shot_events)} mit Schusspositionen ({feats.spatial.n_shots} Schüsse für das xG-Modell)")
 
     # Lernen: Hyperparameter neu optimieren, wenn neue Ergebnisse vorliegen
     params = _load("parameter.json", dict(DEFAULT_PARAMS))
