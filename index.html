@@ -581,6 +581,7 @@
             <dt>xG</dt><dd>eigenes Modell aus <span class="num" data-draw="m-shots" data-source="modell" data-field="raum_schuesse" data-row="0">—</span> Schüssen seit 2024/25: Entfernung, Winkel, Kopfball, Freistoß, Art der Vorlage (Flanke, Steilpass, Konter, Ecke, Standard, ohne Vorlage) und Ort laut Spielbericht. Je Spiel zur Hälfte mit einer Schätzung aus Schüssen und Schüssen aufs Tor gemischt, weil das im Test die Prognosen am besten hielt. Elfmeter <span class="num" data-draw="m-pen" data-source="modell" data-field="elfmeter_xg" data-row="0">—</span>.</dd>
             <dt>FotMob-xG</dt><dd><span class="num" data-draw="m-fmn" data-source="modell" data-field="fotmob_spiele" data-row="0">—</span> Spiele eingetragen, zählen zu <b class="num" data-draw="m-fmw" data-source="modell" data-field="fotmob_gewicht" data-row="0">—</b> % (steigt von 20 auf 70 %)</dd>
             <dt>Ausfälle</dt><dd>Stammspieler (Startelf in mind. der Hälfte der letzten 10 Spiele, gewichtet nach Toren und Vorlagen), die vermutlich fehlen: Rot oder Gelbsperre im letzten Spiel oder nicht im letzten Kader. Fehlt ein Viertel dieser Stärke, verschiebt das die erwarteten Tore um <b class="num" data-draw="m-aus" data-source="modell" data-field="ausfall_effekt_pct" data-row="0">—</b> %. Verletzungsmeldungen vor dem Spiel kennt das Modell nicht.</dd>
+            <dt>Wettquoten</dt><dd>Die erwarteten Tore sind zu <b class="num" data-draw="m-qa" data-source="modell" data-field="quoten_anteil" data-row="0">—</b> % aus den Wettquoten abgeleitet (Sieg/Unentschieden/Niederlage und, wenn vorhanden, über/unter 2,5 Tore), ohne Buchmacher-Marge. Quelle: Marktdurchschnitt von football-data.co.uk (ab Freitag vor dem Spieltag), sonst Bet365 oder DraftKings über ESPN. Im Test an 1.312 Spielen seit 2022/23 war jeder Anbieter genauer als das Modell allein, die Mischung aus beiden am genauesten. Aktuell für <span class="num" data-draw="m-qs" data-source="modell" data-field="quoten_spiele" data-row="0">—</span> Spiele.</dd>
             <dt>Direkte Duelle</dt><dd>werden bei jedem Spiel angezeigt, fließen aber nicht in die Prognose ein: Im Test an der Saison 2025/26 machten sie die Vorhersagen etwas schlechter, weil die aktuelle Teamstärke diese Information schon enthält.</dd>
             <dt>Form-Index (4 Spiele)</dt><dd data-draw="m-gew" data-source="modell" data-field="gewichte" data-row="0">—</dd>
             <dt>Wirkung der Form</dt><dd>1 Punkt Unterschied verschiebt die erwarteten Tore um <b class="num" data-draw="m-fe" data-source="modell" data-field="form_effekt_pct" data-row="0">—</b> %</dd>
@@ -800,6 +801,8 @@
   B.text('m-fmw', 'modell', 'fotmob_gewicht', first, pct0);
   B.text('m-sim', 'modell', 'meister_simulationen', first, (v) => B.nf0.format(Number(v)));
   B.text('m-sim2', 'modell', 'meister_simulationen', first, (v) => B.nf0.format(Number(v)));
+  B.text('m-qa', 'modell', 'quoten_anteil', first, (v) => B.nf0.format(Number(v)));
+  B.text('m-qs', 'modell', 'quoten_spiele', first, (v) => B.nf0.format(Number(v)));
 </script>
 
 <script>
@@ -893,6 +896,14 @@
       addRow(gp, 'Siegchance %', r.p_heim, r.p_gast, f1, 'high', ['prognosen', 'p_heim', w], ['prognosen', 'p_gast', w]);
       addRow(gp, 'Sieg mit 3+ Toren %', r.p_hoch_heim, r.p_hoch_gast, f1, 'high', ['prognosen', 'p_hoch_heim', w], ['prognosen', 'p_hoch_gast', w]);
       addRow(gp, 'Erwartete Tore', r.xg_heim, r.xg_gast, f2, 'high', ['prognosen', 'xg_heim', w], ['prognosen', 'xg_gast', w]);
+      if (r.markt_heim != null && r.markt_heim !== '') {
+        addRow(gp, 'Wettmarkt %', r.markt_heim, r.markt_gast, f1, 'high', ['prognosen', 'markt_heim', w], ['prognosen', 'markt_gast', w]);
+        const mq = B.el('p', 'bt-duelsum');
+        mq.append(document.createTextNode('Unentschieden laut Markt '), B.mark(B.el('b', null, f1(Number(r.markt_remis)) + ' %'), 'prognosen', 'markt_remis', w),
+          document.createTextNode(' · Quelle: '), B.mark(B.el('span', null, String(r.markt_quelle)), 'prognosen', 'markt_quelle', w),
+          document.createTextNode(' · fließt zur Hälfte in die erwarteten Tore ein'));
+        gp.append(mq);
+      }
       addRow(gp, 'Form-Index', r.form_heim, r.form_gast, fs, 'high', ['prognosen', 'form_heim', w], ['prognosen', 'form_gast', w]);
       if (r.ausfall_heim != null && (Number(r.ausfall_heim) > 0 || Number(r.ausfall_gast) > 0)) {
         const ga = group('Vermutete Ausfälle');

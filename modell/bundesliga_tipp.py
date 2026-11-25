@@ -384,6 +384,190 @@ def load_stats(matches: list[Match], now: datetime, offline: bool = False,
 
 
 # --------------------------------------------------------------------------
+# Wettquoten: Markt-Wahrscheinlichkeiten anstehender Spiele (football-data.co.uk, ESPN)
+# --------------------------------------------------------------------------
+
+QUOTEN_ANTEIL = 0.5   # erwartete Tore: Hälfte Modell, Hälfte Wettmarkt – im Test an 1.312 Spielen
+                      # (2022/23–2026/27) in Auswahl und Prüfung klar besser als das Modell allein
+FD = "https://football-data.co.uk"
+
+def _am(v):
+    """Amerikanische Quote (+150 / -120 / 'EVEN') → dezimal."""
+    try:
+        s = str(v).strip().upper()
+        if s in ("EVEN", "EV", "PK"):
+            return 2.0
+        x = float(s)
+    except (TypeError, ValueError):
+        return None
+    if x == 0:
+        return None
+    return 1 + x / 100 if x > 0 else 1 + 100 / abs(x)
+
+
+def _dez(o):
+    if isinstance(o, dict):
+        v = o.get("decimal", o.get("value"))
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            return None
+        return v if v > 1.0 else None
+    return None
+
+
+def anbieter_quoten(eintraege, beendet=True):
+    """{anbieter: {"open": (h, d, a), "close": (h, d, a)}} – nur vollständige, plausible Dreiergruppen.
+    Bei beendeten Spielen werden Einträge ohne Eröffnung/Schluss (Live-Quoten) ignoriert."""
+    out = {}
+    for x in eintraege or []:
+        name = ((x.get("provider") or {}).get("name") or "").strip()
+        if not name or "live" in name.lower():
+            continue
+        res = {}
+        ml = x.get("moneyline")
+        if isinstance(ml, dict) and all(k in ml for k in ("home", "draw", "away")):
+            for zeit in ("open", "close"):
+                t = tuple(_am((ml[k].get(zeit) or {}).get("odds")) for k in ("home", "draw", "away"))
+                if all(t):
+                    res[zeit] = t
+        h, a, d = x.get("homeTeamOdds") or {}, x.get("awayTeamOdds") or {}, x.get("drawOdds") or {}
+        for zeit, quelle in (("open", "open"), ("close", "current")):
+            if zeit in res:
+                continue
+            t = (_dez((h.get(quelle) or {}).get("moneyLine")), _dez((d.get(quelle) or {}).get("moneyLine")),
+                 _dez((a.get(quelle) or {}).get("moneyLine")))
+            if all(t):
+                res[zeit] = t
+        if "close" not in res and all(k in h for k in ("moneyLine",)) and a.get("moneyLine") is not None \
+                and d.get("moneyLine") is not None:
+            t = (_am(h["moneyLine"]), _am(d["moneyLine"]), _am(a["moneyLine"]))
+            if all(t):
+                res["close"] = t
+        if not beendet and not res and isinstance(h.get("odds"), dict):
+            t = (_dez(h["odds"]), _dez(d) if "value" in d else None, _dez(a.get("odds")))
+            if all(t):
+                res["close"] = t
+        for zeit, t in list(res.items()):
+            marge = sum(1 / q for q in t)
+            if not (0.98 < marge < 1.25):
+                del res[zeit]
+        if res:
+            out[name] = res
+    return out
+
+
+def fair(t):
+    """Dezimalquoten (h, d, a) → Wahrscheinlichkeiten ohne Buchmacher-Marge (proportional)."""
+    inv = [1 / q for q in t]
+    s = sum(inv)
+    return tuple(v / s for v in inv)
+
+
+def markt_tore(p1x2, p_ueber=None):
+    """Erwartete Tore (λ, μ, unabhängige Poisson), die die fairen Markt-Wahrscheinlichkeiten für
+    Heimsieg/Unentschieden/Auswärtssieg und – falls vorhanden – „über 2,5 Tore“ am besten treffen."""
+    g = np.arange(MAX_GOALS + 1)
+    tot = np.add.outer(g, g)
+
+    def fehler(x):
+        lam, mu = np.exp(x)
+        mat = np.outer(poisson.pmf(g, lam), poisson.pmf(g, mu))
+        p = np.array([np.tril(mat, -1).sum(), np.trace(mat), np.triu(mat, 1).sum()])
+        f = float(np.sum((p - np.array(p1x2)) ** 2))
+        if p_ueber is not None:
+            f += float((mat[tot > 2].sum() - p_ueber) ** 2)
+        return f
+    r = minimize(fehler, np.log([1.5, 1.2]), method="Nelder-Mead", options={"xatol": 1e-5, "fatol": 1e-10})
+    return tuple(float(v) for v in np.exp(r.x))
+
+
+def _get_text(url: str) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": "bundesliga-tipp/1.0"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return r.read().decode("utf-8-sig", errors="replace")
+
+
+def lade_quoten(matches: list[Match], now: datetime, offline: bool = False) -> dict[int, dict]:
+    """Quoten der anstehenden Bundesliga-Spiele (nächste 10 Tage):
+    1. Marktdurchschnitt + Über/Unter 2,5 von football-data.co.uk (dort freitags für das Wochenende),
+    2. sonst Bet365, 3. sonst DraftKings aus den ESPN-Vorberichten.
+    Ergebnis: {match_id: {"p": (h, d, a) fair, "ueber": p_über_2,5 oder None, "quelle": Text}}"""
+    f = DATA_DIR / "cache" / "quoten.json"
+    if offline:
+        return {int(k): v for k, v in (json.loads(f.read_text("utf-8")) if f.exists() else {}).items()}
+    offen = [m for m in matches if m.league == "bl1" and not m.finished and now < m.kickoff < now + timedelta(days=10)]
+    out: dict[int, dict] = {}
+    by_day: dict[str, list[Match]] = {}
+    for m in offen:
+        by_day.setdefault(m.kickoff.strftime("%Y-%m-%d"), []).append(m)
+
+    def zuordnen(datum, heim, gast):
+        best = None
+        for m in by_day.get(datum, []):
+            sc = _sim((m.home, m.home_full), heim) + _sim((m.away, m.away_full), gast)
+            if best is None or sc > best[0]:
+                best = (sc, m)
+        return best[1] if best and best[0] >= 0.9 else None
+    try:
+        import csv
+        import io
+        for r in csv.DictReader(io.StringIO(_get_text(f"{FD}/fixtures.csv"))):
+            if r.get("Div") != "D1":
+                continue
+            try:
+                datum = datetime.strptime(r["Date"], "%d/%m/%Y").strftime("%Y-%m-%d")
+            except (KeyError, ValueError):
+                continue
+            m = zuordnen(datum, r.get("HomeTeam", ""), r.get("AwayTeam", ""))
+            if not m:
+                continue
+            for key, name in (("Avg", "Marktdurchschnitt (football-data.co.uk)"), ("B365", "Bet365 (football-data.co.uk)")):
+                try:
+                    t = tuple(float(r[f"{key}{x}"]) for x in "HDA")
+                except (KeyError, ValueError, TypeError):
+                    continue
+                if 0.98 < sum(1 / v for v in t) < 1.3:
+                    ueber = None
+                    try:
+                        o, u = float(r[f"{key}>2.5"]), float(r[f"{key}<2.5"])
+                        ueber = (1 / o) / (1 / o + 1 / u)
+                    except (KeyError, ValueError, TypeError, ZeroDivisionError):
+                        pass
+                    out[m.id] = {"p": fair(t), "ueber": ueber, "quelle": name}
+                    break
+    except Exception as e:  # noqa: BLE001
+        print(f"Hinweis: Quoten von football-data.co.uk nicht geladen ({e}).", file=sys.stderr)
+    fehlend = [m for m in offen if m.id not in out]
+    for datum in sorted({m.kickoff.strftime("%Y%m%d") for m in fehlend}):
+        try:
+            events = _get_json(f"{ESPN}/scoreboard?dates={datum}").get("events", [])
+        except RuntimeError:
+            continue
+        for e in events:
+            cs = {c["homeAway"]: c for c in e["competitions"][0]["competitors"]}
+            if "home" not in cs or "away" not in cs:
+                continue
+            m = zuordnen(f"{datum[:4]}-{datum[4:6]}-{datum[6:]}", cs["home"]["team"]["displayName"],
+                         cs["away"]["team"]["displayName"])
+            if not m or m.id in out:
+                continue
+            try:
+                summ = _get_json(f"{ESPN}/summary?event={e['id']}")
+            except RuntimeError:
+                continue
+            a = anbieter_quoten((summ.get("odds") or []) + (summ.get("pickcenter") or []), beendet=False)
+            for name in ("Bet 365", "Bet365", "DraftKings"):
+                t = (a.get(name) or {}).get("close")
+                if t:
+                    out[m.id] = {"p": fair(t), "ueber": None, "quelle": f"{name.replace('Bet 365', 'Bet365')} (ESPN)"}
+                    break
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps({str(k): v for k, v in out.items()}), "utf-8")
+    return out
+
+
+# --------------------------------------------------------------------------
 # Merkmale: xG (aus Schüssen geschätzt), Form-Index, Tabellenplatz
 # --------------------------------------------------------------------------
 
@@ -915,6 +1099,7 @@ class DixonColes:
         self.schaerfe = SCHAERFE
         self.use_aus = AUSFAELLE
         self.use_h2h = DUELLE
+        self.markt: dict[int, tuple] = {}   # match_id -> erwartete Tore laut Wettmarkt
 
     def _dvec(self, m: Match) -> np.ndarray:
         if self.feats is None:
@@ -1021,6 +1206,10 @@ class DixonColes:
         lam = (li + self.home + self._p(self.hadv, m.home_id) + self._p(self.att, m.home_id)
                + self._p(self.dfn, m.away_id) + d / 2)
         mu = li + self._p(self.att, m.away_id) + self._p(self.dfn, m.home_id) + self._p(self.hdef, m.home_id) - d / 2
+        mk = self.markt.get(getattr(m, "id", None))
+        if mk:
+            w = QUOTEN_ANTEIL
+            return math.exp((1 - w) * lam + w * math.log(mk[0])), math.exp((1 - w) * mu + w * math.log(mk[1]))
         return math.exp(lam), math.exp(mu)
 
     def score_matrix(self, m: Match) -> np.ndarray:
@@ -1091,6 +1280,9 @@ class DixonColes:
             "form": [0.0, 0.0],
         }
         out["ausfall"] = [{"wert": 0.0, "fehlen": []}, {"wert": 0.0, "fehlen": []}]
+        info = getattr(self, "markt_info", {}).get(getattr(m, "id", None))
+        if info:
+            out["markt"] = info
         if self.feats is not None and m.league == "bl1":
             out["form"] = [self.feats.form(m.home_id, m.kickoff, m.season)["index"],
                            self.feats.form(m.away_id, m.kickoff, m.season)["index"]]
@@ -1529,6 +1721,10 @@ def export_dashboard(out: Path, season, day, rows, log, params, model, matches, 
         "heim": m.home, "gast": m.away,
         "p_heim": _pct(p["home"]), "p_remis": _pct(p["draw"]), "p_gast": _pct(p["away"]),
         "p_hoch_heim": _pct(p["hoch"][0]), "p_hoch_gast": _pct(p["hoch"][1]),
+        "markt_heim": _pct(p["markt"]["p"][0]) if p.get("markt") else None,
+        "markt_remis": _pct(p["markt"]["p"][1]) if p.get("markt") else None,
+        "markt_gast": _pct(p["markt"]["p"][2]) if p.get("markt") else None,
+        "markt_quelle": p["markt"]["quelle"] if p.get("markt") else None,
         "prognose": f"{p['score'][0]}:{p['score'][1]}", "prognose_p": _pct(p["score_p"]),
         "tipp": f"{p['tipp'][0]}:{p['tipp'][1]}",
         "alternativen": ", ".join(f"{a}:{b}" for a, b, _ in p["top_scores"][1:]),
@@ -1629,6 +1825,7 @@ def export_dashboard(out: Path, season, day, rows, log, params, model, matches, 
         "rho_gewicht": _pct(RHO_GEWICHT), "unentschieden_faktor": DRAW_FAKTOR, "schaerfe": SCHAERFE,
         "form_spiele": FORM_GAMES,
         "meister_simulationen": MEISTER_SIMULATIONEN, "meister_streuung": MEISTER_STREUUNG,
+        "quoten_anteil": round(100 * QUOTEN_ANTEIL), "quoten_spiele": len(getattr(model, "markt", {})),
         "duell_effekt_pct": round(100 * (math.exp(abs(getattr(model, "gamma_h2h", 0.0))) - 1), 1) if DUELLE else None,
         "ausfall_effekt_pct": round(100 * (math.exp(abs(getattr(model, "gamma_aus", 0.0)) * 0.25) - 1), 1) if AUSFAELLE else None,
         "fotmob_spiele": len(feats.fotmob),
@@ -1745,6 +1942,15 @@ def main(argv=None):
               f"(Tendenz {t['backtest']['tendenz']:.1%} im Backtest)")
 
     model = DixonColes(params["xi"], params["reg"], params["wxg"]).fit(matches, now, feats)
+    print("Lade Wettquoten (football-data.co.uk, ESPN) …")
+    quoten = lade_quoten(matches, now, args.offline)
+    model.markt = {mid: markt_tore(qq["p"], qq.get("ueber")) for mid, qq in quoten.items()}
+    model.markt_info = quoten
+    if quoten:
+        quellen = {}
+        for qq in quoten.values():
+            quellen[qq["quelle"]] = quellen.get(qq["quelle"], 0) + 1
+        print(f"  Quoten für {len(quoten)} Spiele: " + ", ".join(f"{k} {v}" for k, v in quellen.items()))
 
     # Zu tippende Spiele bestimmen
     cur = [m for m in matches if m.league == args.liga and m.season == season]
