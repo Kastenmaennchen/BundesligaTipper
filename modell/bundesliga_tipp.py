@@ -52,8 +52,8 @@ SEASONS_BACK = 5            # aktuelle + 5 vergangene Saisons (ab 2021/22): im T
 MAX_GOALS = 10
 DATA_DIR = Path(__file__).resolve().parent / "daten"
 DEFAULT_PARAMS = {"xi": 0.0020, "reg": 4.0, "wxg": 0.65}
-XI_GRID = [0.0007, 0.0010, 0.0016]
-REG_GRID = [1.5, 3.0, 5.0]
+XI_GRID = [0.0007]           # fest: im Test an 5 Saisons (1.312 Spiele) am besten; Nachtuning über 30 Spieltage war zu verrauscht
+REG_GRID = [3.0]             # fest (s. o.); 1,5 gibt minimal genauere Prozente, aber weniger exakte Treffer
 WXG_GRID = [0.5]            # Anteil xG am Lernziel: im Test (3 Saisons) 0,5 mit den meisten exakten Treffern
 BACKTEST_MATCHDAYS = 30   # längerer Zeitraum = stabilere Auswahl (getestet: 12 war zu verrauscht)
 WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
@@ -871,6 +871,8 @@ class Features:
 # Modell
 # --------------------------------------------------------------------------
 
+VORSAISON_GEWICHT = 1.0  # zusätzlicher Faktor für Spiele früherer Saisons (Transfers, Trainerwechsel)
+LIGA2_GEWICHT = 1.0      # Gewicht der Spiele der 2. Liga beim Lernen
 HEIM_ABWEHR = True   # eigene Abwehrstärke je Team für Heimspiele (getrennte Heim-/Auswärtsleistung)
 REG_HOME = 150.0    # Glättung der teamspezifischen Heimwerte (mit Heim-Abwehr und Historie ab 2021/22 im Test am besten)
 REG_GAMMA = 2.0     # Regularisierung des Form-Effekts
@@ -953,6 +955,9 @@ class DixonColes:
                 D[k] = self._dvec(m)
         days = np.array([(ref_time - m.kickoff).total_seconds() / 86400 for m in ms])
         w = np.exp(-self.xi * days)
+        cur = current_season(ref_time)
+        w = w * np.where(np.array([m.season for m in ms]) < cur, VORSAISON_GEWICHT, 1.0) \
+              * np.where(lg == LEAGUES.index("bl2"), LIGA2_GEWICHT, 1.0)
         w = w / w.mean()
         reg, rg = self.reg, self.reg_gamma
         nh = n if HEIM_ABWEHR else 0
@@ -1729,12 +1734,12 @@ def main(argv=None):
     # Lernen: Hyperparameter neu optimieren, wenn neue Ergebnisse vorliegen
     params = _load("parameter.json", dict(DEFAULT_PARAMS))
     done_days = len({(m.season, m.matchday) for m in matches if m.finished and m.league == "bl1"})
-    if args.tune or params.get("tuned_days") != done_days or params.get("version") != 6:
+    if args.tune or params.get("tuned_days") != done_days or params.get("version") != 7:
         print(f"Neue Ergebnisse gefunden – optimiere Modell per Backtest "
               f"(letzte {BACKTEST_MATCHDAYS} Spieltage) …")
         t = tune(matches, feats, verbose=args.tune)
         params.update(xi=t["xi"], reg=t["reg"], wxg=t["wxg"], backtest=t["backtest"],
-                      tuned_days=done_days, version=6)
+                      tuned_days=done_days, version=7)
         _save("parameter.json", params)
         print(f"  beste Einstellung: xG-Gewicht={t['wxg']}, xi={t['xi']}, reg={t['reg']} "
               f"(Tendenz {t['backtest']['tendenz']:.1%} im Backtest)")
