@@ -12,6 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
 <link rel="stylesheet" href="fonts.css">
 <style>
   :root { --font-anthropic-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif; color-scheme: light dark; }
@@ -19,6 +20,10 @@
   @media (prefers-color-scheme: dark) { html, body { background: #0f1218; } }
   body { padding-bottom: env(safe-area-inset-bottom, 0px); }
   .dash-skeleton { position: relative; color: transparent !important; }
+  .bt-install { display: flex; align-items: center; gap: 12px; background: var(--paper); color: var(--ink); border-left: 4px solid var(--red); padding: 8px 4px 8px 16px; font-size: 15px; line-height: 1.4; }
+  .bt-install p { margin: 0; flex: 1; }
+  .bt-install .bt-btn { min-height: 40px; padding: 0 16px; font-size: 15px; white-space: nowrap; }
+  .bt-install .x { appearance: none; border: 0; background: none; color: var(--ink-3); font: inherit; font-size: 22px; line-height: 1; min-width: 44px; min-height: 44px; cursor: pointer; }
   .dash-skeleton::after { content: ""; position: absolute; inset: 6px 0; border-radius: 2px; background: linear-gradient(90deg, rgba(128,128,128,.08), rgba(128,128,128,.16), rgba(128,128,128,.08)); }
 </style>
 <script src="d3.min.js"></script>
@@ -603,7 +608,18 @@
           <p class="bt-note">Angriff: Faktor für eigene Tore (größer ist besser). Abwehr: Faktor für Gegentore (kleiner ist besser).</p>
         </div>
       </div>
-      <p class="bt-foot">Daten: OpenLigaDB (Ergebnisse) und ESPN (Statistik und Spielereignisse mit Position). Dixon-Coles-Poisson-Modell, täglich gegen 23:40 Uhr neu berechnet.</p>
+      <div class="bt-card" id="app-box">
+        <div class="bt-card-h"><h2>Als App installieren</h2></div>
+        <p class="bt-note" id="app-text">Leg den Bundesliga-Tipp als App auf den Home-Bildschirm oder den Computer: Er öffnet sich dann ohne Browserleiste wie eine eigene App, und die zuletzt geladenen Tipps sind auch ohne Internet da.</p>
+        <p class="bt-note" id="app-knopf" hidden><button class="bt-btn" type="button" data-app-install>App installieren</button></p>
+        <p class="bt-note" id="app-fertig" hidden>Du nutzt den Bundesliga-Tipp bereits als App.</p>
+        <dl class="bt-facts" id="app-wege">
+          <dt>iPhone, iPad</dt><dd>in Safari öffnen, Teilen-Symbol, „Zum Home-Bildschirm“</dd>
+          <dt>Android</dt><dd>in Chrome öffnen, Menü ⋮, „App installieren“ (oder „Zum Startbildschirm hinzufügen“)</dd>
+          <dt>Computer</dt><dd>in Chrome oder Edge öffnen, Installieren-Symbol rechts in der Adressleiste</dd>
+        </dl>
+      </div>
+      <p class="bt-foot">Daten: OpenLigaDB (Ergebnisse), ESPN (Statistik und Spielereignisse mit Position) und football-data.co.uk (Wettquoten). Dixon-Coles-Poisson-Modell, täglich gegen 23:40 Uhr neu berechnet.</p>
     </section>
   </div>
 </div>

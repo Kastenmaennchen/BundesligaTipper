@@ -2,7 +2,7 @@
 
 Prognosen, Tabelle und Analysen zur Fußball-Bundesliga: Gewinnwahrscheinlichkeiten, wahrscheinlichste Ergebnisse, Tipp, Schusskarten mit xG, Gefahr (xT) und Feldkontrolle.
 
-**Website:** https://kastenmaennchen.github.io/BundesligaTipper/ – am Handy über „Zum Home-Bildschirm“ als App nutzbar.
+**Website:** https://kastenmaennchen.github.io/BundesligaTipper/ – als App installierbar (Android und Computer über „App installieren“, iPhone/iPad über „Zum Home-Bildschirm“); die zuletzt geladenen Tipps sind auch offline da.
 
 ## Wie die Seite aktuell bleibt
 

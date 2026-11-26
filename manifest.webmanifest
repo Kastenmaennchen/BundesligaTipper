@@ -1,6 +1,7 @@
 {
+  "id": "./",
   "name": "Bundesliga-Tipp",
-  "short_name": "Bundesliga-Tipp",
+  "short_name": "BL-Tipp",
   "description": "Prognosen, Tabelle und Analysen zur Bundesliga",
   "start_url": "./",
   "scope": "./",
@@ -8,9 +9,73 @@
   "background_color": "#edeff1",
   "theme_color": "#c4122f",
   "lang": "de",
+  "dir": "ltr",
+  "categories": [
+    "sports"
+  ],
   "icons": [
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-    {"src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png"},
-    {"src": "icon.svg", "sizes": "any", "type": "image/svg+xml"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tipps des Spieltags",
+      "short_name": "Tipps",
+      "url": "./#spiele",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Tabelle und Meisterchancen",
+      "short_name": "Tabelle",
+      "url": "./#tabelle",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Eigene Bilanz",
+      "short_name": "Bilanz",
+      "url": "./#bilanz",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
