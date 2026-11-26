@@ -1,9 +1,10 @@
 /* Service Worker der Website: macht sie installierbar und zeigt die zuletzt geladenen Tipps auch offline.
    Seite, Skript und Daten: erst Netz, bei Ausfall der Zwischenspeicher. Schriften, Symbole, d3: aus dem Speicher. */
 'use strict';
-var VERSION = 'bt-84c6cc0029a3';
+var VERSION = 'bt-d6c1234d20d2';
 var GRUND = ['./', 'index.html', 'site.js', 'fonts.css', 'd3.min.js', 'icon.svg', 'icon-192.png', 'icon-512.png',
   'apple-touch-icon.png', 'manifest.webmanifest', 'fonts/archivo-var-latin.woff2', 'fonts/archivo-var-latin-ext.woff2',
+  'artikel.html',
   'data/prognosen.json', 'data/staerken.json', 'data/modell.json', 'data/protokoll.json'];
 
 self.addEventListener('install', function (e) {
@@ -48,7 +49,7 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   var p = url.pathname;
-  if (req.mode === 'navigate' || /\/data\/[^/]+\.json$/.test(p) || /\/(index\.html|site\.js|fonts\.css|manifest\.webmanifest)$/.test(p) || p.endsWith('/')) {
+  if (req.mode === 'navigate' || /\/data\/[^/]+\.json$/.test(p) || /\/(index\.html|artikel\.html|site\.js|fonts\.css|manifest\.webmanifest)$/.test(p) || p.endsWith('/')) {
     e.respondWith(netzZuerst(req));
   } else {
     e.respondWith(speicherZuerst(req));

@@ -4,6 +4,8 @@ Prognosen, Tabelle und Analysen zur Fußball-Bundesliga: Gewinnwahrscheinlichkei
 
 **Website:** https://kastenmaennchen.github.io/BundesligaTipper/ – als App installierbar (Android und Computer über „App installieren“, iPhone/iPad über „Zum Home-Bildschirm“); die zuletzt geladenen Tipps sind auch offline da.
 
+**Wie das Modell rechnet:** https://kastenmaennchen.github.io/BundesligaTipper/artikel.html – Fachartikel mit Formeln, Abbildungen, Testergebnissen und einer Ergebnis-Tafel zum Ausprobieren (Stand 26. November 2026).
+
 ## Wie die Seite aktuell bleibt
 
 Jede Nacht gegen 23:40 Uhr rechnet ein geplanter Lauf das Modell neu (Ergebnisse von OpenLigaDB, Spielstatistik und Spielereignisse von ESPN, von Hand eingetragene FotMob-xG) und legt die neuen Daten in `data/` ab. Die Seite lädt nur diese JSON-Dateien; es gibt keinen Server und keine Anmeldung.
